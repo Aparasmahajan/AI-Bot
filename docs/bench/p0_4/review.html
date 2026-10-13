@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blind Review</title>
+<style>
+:root{--paper:#F3F5F8;--sheet:#FFFFFF;--ink:#0E1726;--ink-2:#465267;--ink-3:#66738A;--rule:#D3D9E3;--wash:#EDF1F7;
+ --cobalt:#2148C9;--cobalt-wash:#E3E9FB;--ok:#21734B;--ok-wash:#DDF2E6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#06122A;--sheet:#0A1A36;--ink:#E4EBF6;
+ --ink-2:#A9B7CF;--ink-3:#8494B2;--rule:#22416F;--wash:#0F264C;--cobalt:#8FB2FF;--cobalt-wash:#14306A;--ok:#70D49C;--ok-wash:#123526}}
+:root[data-theme="dark"]{--paper:#06122A;--sheet:#0A1A36;--ink:#E4EBF6;--ink-2:#A9B7CF;--ink-3:#8494B2;--rule:#22416F;
+ --wash:#0F264C;--cobalt:#8FB2FF;--cobalt-wash:#14306A;--ok:#70D49C;--ok-wash:#123526}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 "Segoe UI",system-ui,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:28px 16px 80px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+.lede{color:var(--ink-2);margin:0 0 18px;max-width:760px}
+.bar{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 0;
+ background:var(--paper);border-bottom:1px solid var(--rule);margin-bottom:22px}
+.bar button{font:inherit;padding:7px 14px;border-radius:8px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);cursor:pointer}
+.bar button.primary{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.bar .progress{color:var(--ink-3);font-size:13px;margin-left:auto}
+.task{margin:0 0 34px}
+.task h2{font-size:18px;margin:0 0 8px;display:flex;align-items:center;gap:10px}
+.task h2 .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--cobalt-wash);color:var(--cobalt);font-size:13px}
+details{margin:0 0 12px;color:var(--ink-2)}
+summary{cursor:pointer;font-size:13px}
+pre{white-space:pre-wrap;word-wrap:break-word;margin:0;font:13px/1.5 Consolas,"Cascadia Mono",monospace}
+pre.prompt{background:var(--wash);border-radius:8px;padding:12px;margin-top:8px;color:var(--ink)}
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ans{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ans header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.letter{font-weight:700;color:var(--cobalt)}
+.who{display:none;font-size:12px;color:var(--ok);background:var(--ok-wash);padding:1px 8px;border-radius:99px}
+.revealed .who{display:inline}
+.ans pre{flex:1}
+.stars{display:flex;gap:6px}
+.stars button{width:34px;height:30px;border-radius:7px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);cursor:pointer;font:inherit}
+.stars button.on{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+</style></head>
+<body><main>
+<h1>Blind review: API against the local model</h1>
+<p class="lede">Each task was given to Groq and to the local Qwen3.5 models with the same prompt. The answers are shuffled and labelled A to D. Score each one from 1 (unusable) to 5 (I'd use it as is). When you're done, press <b>Reveal</b> to see who wrote what, then <b>Copy my scores</b> and paste them to Claude. Made 13 October 2026; every prompt is invented.</p>
+<div class="bar"><button class="primary" id="copy">Copy my scores</button><button id="reveal">Reveal who wrote what</button><span class="progress" id="progress"></span></div>
+<section class="task" data-task="meeting_en">
+  <h2><span class="n">1</span>Meeting notes, English call</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Write notes for this meeting.
+
+Format, exactly:
+## Summary
+- 2 to 4 bullets
+## Decisions
+- one bullet per decision, or &quot;- None&quot;
+## Action items
+- [Owner] what (due: when, or &quot;no date&quot;)
+
+Transcript (Teams, Tue 13 Oct 2026, 10:00-10:15):
+Priya: Morning all. Quick one today. Arjun, where are we on the login timeout bug?
+Arjun: PAY-412. I found it: the session refresh runs after the token has already expired. The fix is ready locally; I&#x27;ll raise the PR today and it should be merged by Wednesday.
+Priya: Good. Me, can you review Arjun&#x27;s PR?
+Me: Yes, I&#x27;ll review it as soon as it&#x27;s up. I&#x27;m also preparing the UAT build; I&#x27;ll share it with Sanjay&#x27;s team by Wednesday.
+Priya: Meera, the Kafka consumer?
+Meera: Still blocked. I don&#x27;t have access to the staging Kafka cluster. I raised a ticket with DevOps, but nobody has picked it up.
+Priya: I&#x27;ll escalate that with DevOps today. Without Kafka we can&#x27;t test the order events.
+Meera: Thanks. Once I have access it&#x27;s about two days of work.
+Priya: One more thing: dark mode. We won&#x27;t make it this sprint, so let&#x27;s move it to the next sprint. Everyone okay?
+Arjun: Fine by me.
+Me: Agreed.
+Priya: Okay. The release candidate is still planned for Thursday. Next sync is Friday at 11. Thanks, everyone.</pre></details>
+  <div class="answers"><article class="ans" data-key="meeting_en:A">
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.1 s to first word, 0.3 s in all · checks 5/6</span></header>
+  <pre>## Summary
+- Arjun will merge the login timeout fix (PAY‑412) by Wednesday.
+- Me will review the PR and share the UAT build with Sanjay’s team by Wednesday.
+- Meera is blocked on Kafka access; Priya will escalate with DevOps.
+- Dark mode is postponed to the next sprint; release candidate remains on Thursday.
+
+## Decisions
+- Dark mode will be moved to the next sprint.
+
+## Action items
+- [Arjun] Raise PR for login timeout bug (due: today)
+- [Me] Review Arjun’s PR (no date)
+- [Me] Share UAT build with Sanjay’s team (due: Wednesday)
+- [Priya] Escalate Kafka access ticket to DevOps (due: today)
+- [Meera] Begin Kafka consumer work once access granted (no date)</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="meeting_en:B">
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.6 s to first word, 1.2 s in all · checks 6/6</span></header>
+  <pre>## Summary
+- Arjun identified the login timeout bug (PAY‑412) and has a local fix ready.
+- Me will review Arjun’s PR and is preparing the UAT build to share with Sanjay’s team by Wednesday.
+- Meera is blocked on Kafka consumer work due to missing access to the staging Kafka cluster.
+- Dark mode work is postponed to the next sprint.
+
+## Decisions
+- The login timeout fix PR will be raised today and merged by Wednesday.  
+- Dark mode will be moved to the next sprint.  
+- Release candidate remains scheduled for Thursday.  
+- Next sync meeting set for Friday at 11:00 am.
+
+## Action items
+- **Arjun** raise the PR for the login timeout fix (due: today).  
+- **Arjun** ensure the PR is merged by Wednesday (due: Wednesday).  
+- **Me** review Arjun’s PR as soon as it’s up (no date).  
+- **Me** share the UAT build with Sanjay’s team (due: Wednesday).  
+- **Priya** escalate Meera’s Kafka access request with DevOps (due: today).  
+- **Meera** start Kafka consumer work once access is granted (estimated 2 days, no exact due date).  </pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="meeting_hinglish">
+  <h2><span class="n">2</span>Meeting notes, Hindi and English call</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Write notes for this meeting, in English.
+
+Format, exactly:
+## Summary
+- 2 to 4 bullets
+## Decisions
+- one bullet per decision, or &quot;- None&quot;
+## Action items
+- [Owner] what (due: when, or &quot;no date&quot;)
+
+The transcript mixes Hindi and English; the speech-to-text wrote Hindi in Devanagari.
+Transcript (Teams, Tue 13 Oct 2026, 16:00-16:20):
+Rohit: Hi everyone. आज का agenda छोटा है: staging deployment और payment gateway वाला issue.
+Neha: Payment gateway में timeout आ रहा है। मैंने logs देखे, problem retry logic में है, हर retry पे नया token बन रहा है। मैं Thursday तक fix कर दूंगी।
+Rohit: ठीक है। Deployment का क्या status है?
+Me: Staging पे deployment Friday को करेंगे। उससे पहले मुझे database migration script review करनी है, वो मैं कल तक कर दूंगा।
+Rohit: Perfect. Client demo Monday को है, इसलिए Friday की deadline miss नहीं होनी चाहिए।
+Neha: एक और बात, QA team को नए test cases चाहिए। मैं आज शाम तक भेज दूंगी।
+Rohit: और हाँ, logging library का upgrade अभी नहीं करेंगे, demo के बाद देखेंगे।
+Me: Agreed.
+Rohit: Okay, next sync Wednesday को चार बजे। Thanks.</pre></details>
+  <div class="answers"><article class="ans" data-key="meeting_hinglish:A">
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.4 s to first word, 0.7 s in all · checks 7/7</span></header>
+  <pre>## Summary
+- Staging deployment scheduled for Friday; database migration script review due tomorrow.
+- Payment gateway timeout issue identified; retry logic causing new token creation; Neha will fix by Thursday.
+- QA team needs new test cases; Neha will send them by tonight.
+- Logging library upgrade postponed until after the client demo on Monday.
+
+## Decisions
+- Staging deployment will occur on Friday.
+- Payment gateway retry logic will be fixed by Thursday.
+- New QA test cases will be delivered by tonight.
+- Logging library upgrade will be deferred until after the Monday demo.
+
+## Action items
+- [Me] Review database migration script (due: tomorrow)
+- [Neha] Fix payment gateway retry logic (due: Thursday)
+- [Neha] Send new QA test cases (due: tonight)
+- [Rohit] Schedule next sync on Wednesday at 4 pm (no date)</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="meeting_hinglish:B">
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.5 s to first word, 1.0 s in all · checks 7/7</span></header>
+  <pre>## Summary
+- Discussed staging deployment schedule and payment gateway timeout issue.  
+- Agreed on fixing the payment gateway retry logic by Thursday.  
+- Planned staging deployment for Friday, with a database migration script review to be completed by tomorrow.  
+- Set next sync for Wednesday at 4 PM and noted that the logging library upgrade will be postponed until after the client demo on Monday.  
+
+## Decisions
+- Payment gateway retry logic will be fixed by Thursday.  
+- Staging deployment will occur on Friday; the deadline must not be missed for the Monday client demo.  
+- Logging library upgrade will be deferred until after the demo.  
+
+## Action items
+- **Neha** will fix the payment gateway retry logic (due: Thursday).  
+- **Neha** will send new QA test cases to the QA team (due: today evening).  
+- **Me** will review the database migration script (due: tomorrow).  
+- **Me** will perform the staging deployment (due: Friday).  
+- **Rohit** will lead the next sync meeting (due: Wednesday at 4 PM).</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="label_work">
+  <h2><span class="n">3</span>Work or Timepass: a planning call</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Label this call Work or Timepass. Reply with JSON only:
+{&quot;label&quot;: &quot;work&quot; or &quot;timepass&quot;, &quot;confidence&quot;: a number from 0 to 1, &quot;reasons&quot;: [one to three short strings]}
+
+Call: app Microsoft Teams; calendar entry &quot;Sprint 43 planning&quot; (organiser Priya, 7 invitees); Tue 13 Oct 2026, 11:00-11:45; 6 people spoke.
+First minute of the transcript: &quot;Okay, let&#x27;s go through the backlog. We have 34 story points of carry-over from last sprint. The rate limiter for the public API is the top item, then the invoice export bug...&quot; </pre></details>
+  <div class="answers"><article class="ans" data-key="label_work:A">
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 1/1</span></header>
+  <pre>{&quot;label&quot;:&quot;work&quot;,&quot;confidence&quot;:0.95,&quot;reasons&quot;:[&quot;Sprint planning meeting&quot;,&quot;Team discussing backlog and story points&quot;,&quot;Work-related agenda&quot;]}</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="label_work:B">
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.5 s to first word, 0.7 s in all · checks 1/1</span></header>
+  <pre>{
+  &quot;label&quot;: &quot;work&quot;,
+  &quot;confidence&quot;: 0.97,
+  &quot;reasons&quot;: [
+    &quot;Meeting is a sprint planning session&quot;,
+    &quot;Discussion of backlog and technical tasks&quot;,
+    &quot;Involves multiple team members&quot;
+  ]
+}</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="label_timepass">
+  <h2><span class="n">4</span>Work or Timepass: a chat with friends</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Label this call Work or Timepass. Reply with JSON only:
+{&quot;label&quot;: &quot;work&quot; or &quot;timepass&quot;, &quot;confidence&quot;: a number from 0 to 1, &quot;reasons&quot;: [one to three short strings]}
+
+Call: app WhatsApp; no calendar entry; Tue 13 Oct 2026, 13:10-13:35; 3 people spoke.
+First minute of the transcript: &quot;bhai kal ka match dekha? last over mein kya six maara yaar... haan haan, aur weekend pe movie ka plan hai kya? Saturday ko chalte hain na...&quot; </pre></details>
+  <div class="answers"><article class="ans" data-key="label_timepass:A">
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.6 s to first word, 0.7 s in all · checks 1/1</span></header>
+  <pre>{
+  &quot;label&quot;: &quot;timepass&quot;,
+  &quot;confidence&quot;: 0.95,
+  &quot;reasons&quot;: [
+    &quot;Conversation is about personal topics (cricket match, movie plans)&quot;,
+    &quot;No work-related calendar entry is present&quot;,
+    &quot;Participants discuss leisure activities&quot;
+  ]
+}</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="label_timepass:B">
+  <header><span class="letter">B</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 1/1</span></header>
+  <pre>{&quot;label&quot;:&quot;timepass&quot;,&quot;confidence&quot;:0.95,&quot;reasons&quot;:[&quot;casual conversation about sports and movies&quot;,&quot;no work-related topics mentioned&quot;,&quot;participants discussing personal plans&quot;]}</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="email_explain">
+  <h2><span class="n">5</span>Explain an email</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Explain this email. Today is Tuesday 13 October 2026. Reply with JSON only:
+{&quot;summary&quot;: &quot;two short lines&quot;, &quot;they_want&quot;: [&quot;...&quot;], &quot;deadlines&quot;: [{&quot;what&quot;: &quot;...&quot;, &quot;date&quot;: &quot;YYYY-MM-DD&quot;}], &quot;people&quot;: [&quot;...&quot;], &quot;reply_options&quot;: [&quot;...&quot;, &quot;...&quot;]}
+
+From: Vikram Rao (client PM)
+To: Me; Cc: Priya
+Subject: Review next week: docs and load test
+
+Hi,
+Ahead of our review next Tuesday, could you send the API documentation and the latest load test report? Please also confirm whether the rate limit is applied per user or per tenant; our security team is asking. If the report isn&#x27;t final, a draft is fine, but we need it by Friday so we can go through it before the review.
+Thanks,
+Vikram</pre></details>
+  <div class="answers"><article class="ans" data-key="email_explain:A">
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 3/4</span></header>
+  <pre>{&quot;summary&quot;:&quot;Send API docs and load test report by Friday&quot;,&quot;they_want&quot;:[&quot;API documentation&quot;,&quot;latest load test report&quot;,&quot;confirmation of rate limit scope (per user or per tenant)&quot;],&quot;deadlines&quot;:[{&quot;what&quot;:&quot;API docs &amp; load test report&quot;,&quot;date&quot;:&quot;2026-10-14&quot;}],&quot;people&quot;:[&quot;Vikram Rao&quot;,&quot;Priya&quot;],&quot;reply_options&quot;:[&quot;Send the requested documents and confirmation now&quot;,&quot;Request a brief extension if needed&quot;]}</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="email_explain:B">
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.7 s to first word, 1.0 s in all · checks 4/4</span></header>
+  <pre>{
+  &quot;summary&quot;: &quot;Vikram requests API docs, a load test report draft, and rate‑limit clarification before the review.&quot;,
+  &quot;they_want&quot;: [
+    &quot;API documentation&quot;,
+    &quot;latest load test report (draft acceptable)&quot;,
+    &quot;confirmation of whether rate limit is per user or per tenant&quot;
+  ],
+  &quot;deadlines&quot;: [
+    {
+      &quot;what&quot;: &quot;Provide the requested documents and clarification&quot;,
+      &quot;date&quot;: &quot;2026-10-16&quot;
+    }
+  ],
+  &quot;people&quot;: [
+    &quot;Vikram Rao (client PM)&quot;,
+    &quot;Priya (cc)&quot;
+  ],
+  &quot;reply_options&quot;: [
+    &quot;Send the API docs and draft load test report now, and confirm the rate‑limit scope.&quot;,
+    &quot;Ask if any specific version of the docs or additional details are needed before sending.&quot;
+  ]
+}</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="email_draft">
+  <h2><span class="n">6</span>Draft a reply in my style</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Draft my reply to this email. My point, as I said it: &quot;tell him I&#x27;ll share the build by Wednesday, and I still need Kafka access from DevOps; without it the integration is blocked&quot;. My style: greeting &quot;Hi &lt;first name&gt;,&quot;, short paragraphs, sign-off &quot;Thanks,&quot;. Write only the email body, under 120 words. Promise nothing I didn&#x27;t say.
+
+From: Sanjay Mehta
+Subject: UAT build and Kafka integration
+Hi,
+When can we expect the UAT build? And is the Kafka integration done on your side?
+Regards,
+Sanjay</pre></details>
+  <div class="answers"><article class="ans" data-key="email_draft:A">
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.5 s to first word, 0.5 s in all · checks 6/6</span></header>
+  <pre>Hi Sanjay,
+
+I’ll share the UAT build by Wednesday. I’m still waiting for Kafka access from DevOps; without it the integration is blocked.
+
+Thanks,</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="email_draft:B">
+  <header><span class="letter">B</span><span class="who">groq-20b · 0.4 s to first word, 0.4 s in all · checks 6/6</span></header>
+  <pre>Hi Sanjay,
+
+I’ll share the UAT build by Wednesday.  
+I still need Kafka access from DevOps; without it the integration is blocked.
+
+Thanks,</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="code_explain">
+  <h2><span class="n">7</span>Explain code and fix it</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Explain this Python code. Format exactly:
+## What it does
+(2 sentences)
+## Problems
+- bullets
+## Better version
+(one ```python code block)
+
+```python
+def add_tag(tag, tags=[]):
+    tags.append(tag)
+    return tags
+
+def average(nums):
+    total = 0
+    for i in range(1, len(nums)):
+        total += nums[i]
+    return total / len(nums)
+```</pre></details>
+  <div class="answers"><article class="ans" data-key="code_explain:A">
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.6 s to first word, 1.0 s in all · checks 5/5</span></header>
+  <pre>## What it does
+The `add_tag` function appends a given `tag` to a list of tags and returns the list.  
+The `average` function attempts to compute the arithmetic mean of a list of numbers.
+
+## Problems
+- `add_tag` uses a mutable default argument (`tags=[]`), causing the same list to be shared across calls.  
+- `average` skips the first element because the loop starts at index 1, leading to an incorrect sum.  
+- `average` will raise a `ZeroDivisionError` when `nums` is empty.
+
+## Better version
+```python
+def add_tag(tag, tags=None):
+    &quot;&quot;&quot;Append a tag to a list and return the list without sharing state.&quot;&quot;&quot;
+    if tags is None:
+        tags = []
+    tags.append(tag)
+    return tags
+
+
+def average(nums):
+    &quot;&quot;&quot;Return the arithmetic mean of a sequence of numbers.&quot;&quot;&quot;
+    if not nums:
+        raise ValueError(&quot;Cannot compute average of an empty sequence&quot;)
+    total = sum(nums)          # sum all elements
+    return total / len(nums)   # divide by the number of elements
+```</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="code_explain:B">
+  <header><span class="letter">B</span><span class="who">groq-20b · 0.4 s to first word, 0.7 s in all · checks 5/5</span></header>
+  <pre>## What it does
+The `add_tag` function appends a given `tag` to a list called `tags` and returns the list.  
+The `average` function calculates the average of a list of numbers, but it skips the first element in the calculation.
+
+## Problems
+- `add_tag` uses a mutable default argument (`tags=[]`), causing all calls to share the same list.  
+- `average` starts the loop at index 1, so the first number in `nums` is ignored, leading to an incorrect average.  
+- `average` does not handle an empty list, which would raise a division‑by‑zero error.
+
+## Better version
+```python
+def add_tag(tag, tags=None):
+    if tags is None:
+        tags = []
+    tags.append(tag)
+    return tags
+
+def average(nums):
+    if not nums:
+        return 0  # or raise ValueError(&quot;Cannot average an empty list&quot;)
+    total = sum(nums)
+    return total / len(nums)
+```
+</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="dictation_cleanup">
+  <h2><span class="n">8</span>Clean up dictation</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Clean up this dictated text: remove filler words, repeated words and false starts, and fix punctuation and capitalisation. Keep my words and meaning; add nothing. Reply with the cleaned text only.
+
+um so basically i wanted to uh tell you that the the deployment is moved to friday because uh the qa team found two issues in the payment flow and uh we need to fix them first so yeah um please don&#x27;t don&#x27;t share the build with the client before that okay</pre></details>
+  <div class="answers"><article class="ans" data-key="dictation_cleanup:A">
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.4 s to first word, 0.5 s in all · checks 4/4</span></header>
+  <pre>I wanted to tell you that the deployment has been moved to Friday because the QA team found two issues in the payment flow and we need to fix them first. Please do not share the build with the client before that.</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="dictation_cleanup:B">
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.6 s to first word, 0.7 s in all · checks 4/4</span></header>
+  <pre>Basically, I wanted to tell you that the deployment is moved to Friday because the QA team found two issues in the payment flow, and we need to fix them first. Please don&#x27;t share the build with the client before that.</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="journal">
+  <h2><span class="n">9</span>End-of-day journal with citations</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">Write my end-of-day journal from these events: 3 to 6 sentences of plain prose, in the first person. End every sentence with the IDs of the events it uses, in square brackets, like [E1] or [E2, E3]. Mention each commit by its exact ID. Mention timepass calls only as a count: no app, time or length. Add nothing that isn&#x27;t in the events: no reasons, attachments, results or plans.
+
+Events, Tue 13 Oct 2026:
+E1 10:42 commit 3f9c2a1 in AI-Bot (dev): &quot;Add API key window and Credential Manager storage&quot;
+E2 10:58 commit b7d41e0 in AI-Bot (dev): &quot;P0-1 two-lane capture check&quot;
+E3 10:30-10:47 call, Teams, label Work, 16 min; notes: decided to move dark mode to the next sprint
+E4 12:15 email sent to Vikram Rao, subject &quot;API docs and load test report&quot;
+E5 13:10-13:35 call, WhatsApp, label Timepass
+E6 dictation: 6 times, 412 words in total</pre></details>
+  <div class="answers"><article class="ans" data-key="journal:A">
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.6 s to first word, 0.7 s in all · checks 4/5</span></header>
+  <pre>I started the day by committing changes to the AI‑Bot repository, adding an API key window and Credential Manager storage [E1]. Later I pushed another commit that implemented the P0‑1 two‑lane capture check [E2]. I had a 16‑minute Teams call where we decided to move dark mode to the next sprint [E3]. After that, I sent an email to Vikram Rao with the API docs and load test report, made one timepass call, and finished the day with six dictations totaling 412 words [E4, E5, E6].</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="journal:B">
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.8 s to first word, 1.1 s in all · checks 5/5</span></header>
+  <pre>I made two commits to the AI‑Bot repository, adding an API key window with Credential Manager storage (3f9c2a1) and implementing a two‑lane capture check (b7d41e0). [E1, E2]  
+I had a Teams call labeled Work for 16 minutes, during which we decided to move dark mode to the next sprint. [E3]  
+I sent an email to Vikram Rao with the subject “API docs and load test report.” [E4]  
+I spent a brief timepass call and did a dictation session of six entries totaling 412 words. [E5, E6]</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<section class="task" data-task="answer">
+  <h2><span class="n">10</span>Quick answer</h2>
+  <details><summary>Show the prompt</summary><pre class="prompt">In two sentences: what is the difference between a process and a thread?</pre></details>
+  <div class="answers"><article class="ans" data-key="answer:A">
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.5 s to first word, 0.6 s in all · checks 3/3</span></header>
+  <pre>A process is an independent execution unit that has its own memory space, resources, and at least one thread, while a thread is a lightweight execution path that runs within a process and shares that process’s memory and resources. Consequently, multiple threads can operate concurrently inside the same process, whereas separate processes run in isolation from each other.</pre>
+  <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article><article class="ans" data-key="answer:B">
+  <header><span class="letter">B</span><span class="who">groq-20b · 0.4 s to first word, 0.5 s in all · checks 3/3</span></header>
+  <pre>A process is an independent program instance that has its own memory space and system resources, while a thread is a smaller unit of execution that runs within a process and shares the process’s memory and resources. Threads can execute concurrently within the same process, allowing multiple tasks to run in parallel without the overhead of separate processes.</pre>
+  <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
+</article></div>
+</section>
+<div class="toast" id="toast"></div>
+</main>
+<script>
+const KEY = 'mwb-p0-4-scores';
+let scores = {};
+try { scores = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+const all = [...document.querySelectorAll('.ans')];
+function paint() {
+  all.forEach(a => a.querySelectorAll('.stars button').forEach(b => b.classList.toggle('on', +b.dataset.v <= (scores[a.dataset.key] || 0))));
+  document.getElementById('progress').textContent = `${Object.keys(scores).length} of ${all.length} answers scored`;
+}
+all.forEach(a => a.querySelectorAll('.stars button').forEach(b => b.addEventListener('click', () => {
+  scores[a.dataset.key] = +b.dataset.v;
+  try { localStorage.setItem(KEY, JSON.stringify(scores)); } catch (e) {}
+  paint();
+})));
+document.getElementById('reveal').addEventListener('click', e => {
+  const on = document.body.classList.toggle('revealed');
+  e.target.textContent = on ? 'Hide who wrote what' : 'Reveal who wrote what';
+});
+document.getElementById('copy').addEventListener('click', async () => {
+  const text = 'P0-4 scores: ' + Object.entries(scores).map(([k, v]) => `${k}=${v}`).join(' ');
+  try { await navigator.clipboard.writeText(text); toast('Copied. Paste it to Claude.'); }
+  catch (e) { prompt('Copy this:', text); }
+});
+function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 1800); }
+paint();
+</script>
+</body></html>

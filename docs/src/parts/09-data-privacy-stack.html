@@ -1,0 +1,193 @@
+
+<section id="s14" class="sec">
+<h2><span class="n">14</span>Data model and storage</h2>
+<div class="tbl"><table>
+<thead><tr><th>What</th><th>Where</th></tr></thead>
+<tbody>
+<tr><th scope="row">Database</th><td class="mono">%LOCALAPPDATA%\MWB\mwb.db <span class="small">SQLite, WAL mode, FTS5 for transcript search</span></td></tr>
+<tr><th scope="row">Meeting audio, temporary</th><td class="mono">%LOCALAPPDATA%\MWB\audio\ <span class="small">Opus, deleted after transcription</span></td></tr>
+<tr><th scope="row">Models</th><td class="mono">%LOCALAPPDATA%\MWB\models\ <span class="small">plus the existing Hugging Face cache</span></td></tr>
+<tr><th scope="row">Settings</th><td class="mono">%APPDATA%\MWB\config.toml <span class="small">secrets in Windows Credential Manager</span></td></tr>
+<tr><th scope="row">Your journal</th><td class="mono">Documents\MWB\journal\YYYY-MM-DD.md <span class="small">plain Markdown you own</span></td></tr>
+<tr><th scope="row">Logs</th><td class="mono">%LOCALAPPDATA%\MWB\logs\ <span class="small">rotating; never contain transcript text</span></td></tr>
+</tbody></table></div>
+
+<figure class="fig">
+  <div class="fig-frame">{{fig:er}}</div>
+  <figcaption><b>Figure 14.1</b>Main tables. Arrows are foreign keys. Dictations, emails and commits also appear as rows in <code>events</code> through <code>ref_id</code>, and a journal is built from the events of one date.</figcaption>
+</figure>
+
+<div class="tbl"><table>
+<thead><tr><th>Data</th><th>Kept by default</th><th>You can change it to</th></tr></thead>
+<tbody>
+<tr><th scope="row">Raw meeting audio</th><td>Deleted after transcription</td><td>Keep for N days</td></tr>
+<tr><th scope="row">Transcript segments</th><td>90 days</td><td>7 days to forever</td></tr>
+<tr><th scope="row">Summaries, action items, labels</th><td>Until you delete them</td><td>Any period</td></tr>
+<tr><th scope="row">Window-title samples</th><td>30 days, then rolled up into daily totals</td><td>Off entirely</td></tr>
+<tr><th scope="row">Journal Markdown files</th><td>Forever (they are your files)</td><td>Your choice</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="s15" class="sec">
+<h2><span class="n">15</span>Privacy and security</h2>
+<p class="lead">MWB hears your meetings and sees your email, so it has to be trustworthy by construction, on a laptop your employer manages.</p>
+<div class="tbl"><table>
+<thead><tr><th>Concern</th><th>What MWB does</th></tr></thead>
+<tbody>
+<tr><th scope="row">Where data goes</th><td>Audio, transcripts and notes are stored only in your Windows profile. With default settings, the only network requests carry text for language work to your API provider.</td></tr>
+<tr><th scope="row">Cloud models</th><td>On for language skills by default for now, off for any skill set to local-only. The first time each skill uses the API, MWB shows the exact text it sends. Audio is never sent. Check your company's policy for work content first.</td></tr>
+<tr><th scope="row">Recording colleagues</th><td>A visible tray state and a notification whenever MWB records, a prompt before each recording in week 1, a policy per app (record, ask or never) with personal apps such as WhatsApp always asking, one key to stop, and import of the platform's own transcript as an alternative. Check your company's policy and local law first, since some places require everyone's consent.</td></tr>
+<tr><th scope="row">A managed laptop</th><td>User-mode install, no admin rights, no drivers, no keyboard hook, an honest process name and icon, and logs IT can read. Ask IT before running it on this machine.</td></tr>
+<tr><th scope="row">Data at rest</th><td>Files live under your profile, which IT normally protects with BitLocker. Secrets go to Windows Credential Manager (DPAPI). Encrypting the database with SQLCipher is a v1 option.</td></tr>
+<tr><th scope="row">Activity tracking</th><td>App names and window titles only. No keystrokes, no screenshots, no browser history. A denylist for apps and titles, private hours, and Ctrl+Alt+P to pause everything.</td></tr>
+<tr><th scope="row">Forgetting</th><td>"Forget this meeting" and "Forget today" buttons remove the rows, the audio and the journal entries together.</td></tr>
+<tr><th scope="row">Untrusted text</th><td>An email or a meeting can contain instructions aimed at the model. MWB treats model output as text only: it never runs it, never sends mail and never opens links from it.</td></tr>
+</tbody></table></div>
+</section>
+
+<section id="s16" class="sec">
+<h2><span class="n">16</span>Tech stack and setup</h2>
+
+<h3><span class="n">16.1</span>Stack</h3>
+<div class="tbl dense"><table>
+<thead><tr><th>Layer</th><th>POC choice</th><th>Why</th><th>Alternatives</th></tr></thead>
+<tbody>
+<tr><th scope="row">Language</th><td>Python 3.14 through <code>py</code>, one environment per worker</td><td>Already installed and proven with Parakeet; the AI tooling is Python-first</td><td>C#/.NET for a native shell later; close to Java</td></tr>
+<tr><th scope="row">Environments</th><td>venv and pip, built into Python, with exact versions pinned</td><td>Nothing extra to download</td><td>uv (15.8 MB) if environments get complex</td></tr>
+<tr><th scope="row">Tray, notifications</th><td>pystray, Windows toast notifications</td><td>Tiny</td><td>WinUI tray app later</td></tr>
+<tr><th scope="row">Hotkeys</th><td><code>RegisterHotKey</code> and <code>GetAsyncKeyState</code> through ctypes</td><td>No global hook</td><td>keyboard or pynput (hooks; noisy for endpoint security)</td></tr>
+<tr><th scope="row">Audio</th><td>PyAudioWPatch (0.1 MB) for both the mic and the loopback; P0-1 confirms it</td><td>One small library for both lanes, no numpy</td><td>soundcard, which needs numpy (13 MB in all); the process-loopback API to capture only the call app, later</td></tr>
+<tr><th scope="row">Voice activity</th><td>AI-App's adaptive VAD, ported; Silero VAD as an upgrade</td><td>Tuning already done on this laptop</td><td>WebRTC VAD</td></tr>
+<tr><th scope="row">Speech</th><td>onnx-asr and onnxruntime (Parakeet int8); whisper.cpp v1.9.2 server</td><td>Measured on this laptop</td><td>sherpa-onnx, faster-whisper</td></tr>
+<tr><th scope="row">Language models</th><td>An OpenAI-compatible API client (Groq by default); llama.cpp <code>llama-server</code> with GGUF as the local fallback, using the build already in Tools\llamacpp</td><td>One client for both routes; llama-server is one executable, and ending it frees all its memory</td><td>LM Studio's server (installed, but heavier), Ollama, Foundry Local</td></tr>
+<tr><th scope="row">Outlook</th><td>comtypes (0.3 MB) for COM against classic Outlook; it also reads browser tab titles through UI Automation</td><td>No admin consent needed; pure Python</td><td>pywin32 (7 MB); Microsoft Graph, which needs an app registration</td></tr>
+<tr><th scope="row">Storage</th><td>SQLite with WAL and FTS5, from the standard library</td><td>No server, fast search</td><td>DuckDB for analytics</td></tr>
+<tr><th scope="row">Windows</th><td>Tkinter result cards; the Today page as local HTML in your browser</td><td>Both ship with Python and the OS; nothing stays open</td><td>pywebview, Tauri</td></tr>
+<tr><th scope="row">Indicator</th><td>Layered Win32 window with per-pixel transparency, painted with Pillow</td><td>Smooth edges without a browser engine; a still image when idle</td><td>Tk (jagged edges), Qt (heavier)</td></tr>
+<tr><th scope="row">Text insertion</th><td>Clipboard save, Ctrl+V through SendInput, restore</td><td>Works in nearly every app</td><td>UI Automation ValuePattern</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">16.2</span>Repository layout</h3>
+<pre><code>MWB/
+  docs/                      this specification, benchmark scripts and results, decision records
+  mwb/                       the core: always on, never imports numpy or onnxruntime
+    app.py                   entry point: single instance, tray, lazy worker start
+    hotkeys.py               RegisterHotKey, hold detection, double taps, fallbacks
+    bus.py                   in-process event bus
+    scheduler.py             job queue, priority classes, power and CPU checks
+    memory_guard.py          GlobalMemoryStatusEx checks, unload policy
+    effort.py                effort governor, levels E1 to E4
+    machine.py               hardware fingerprint, calibration, per-machine settings
+    supervisor.py            start, health-check and end worker processes
+    audio/                   mic and loopback capture, VAD, ring buffer
+    sensors/                 meeting_detector.py, activity.py
+    collectors/              git.py, outlook.py, calendar.py
+    skills/                  dictate.py, rewrite.py, email.py, code.py, meeting.py, journal.py
+    llm/                     router.py (local or cloud), prompts/
+    store/                   db.py, schema.sql, migrations/
+    ui/                      tray icons, cards.py, indicator.py, skins/, today/ (local HTML)
+  workers/
+    asr/                     server.py (from AI-App) plus the whisper.cpp launcher
+    llm/                     llama-server launcher
+  config/                    default.toml, models.yaml, vc_apps.yaml, dictionary.txt
+  scripts/                   setup.ps1, bench.ps1 (Phase 0 calibration)
+  tests/                     audio fixtures, golden summaries, the 20-phrase dictation script</code></pre>
+
+<h3><span class="n">16.3</span>Configuration</h3>
+<div class="code-h">%APPDATA%\MWB\config.toml</div>
+<pre><code>[general]
+profile = "auto"                 <span class="c"># auto re-derives on every machine; or lean | balanced | performance | workstation</span>
+effort_preference = "suggested"  <span class="c"># what the setup screen pre-selects on a new device (§12.6)</span>
+start_with_windows = true
+journal_time = "18:30"
+
+[hotkeys]
+dictate = "ctrl+alt+space"
+rewrite = "ctrl+alt+r"
+email   = "ctrl+alt+e"
+code    = "ctrl+alt+k"
+meeting = "ctrl+alt+m"
+note    = "ctrl+alt+n"
+today   = "ctrl+alt+j"
+pause   = "ctrl+alt+p"
+
+[triggers]
+talk = "double-tap caps lock"    <span class="c"># push-to-talk on ctrl+alt+space also works</span>
+finish = "double-tap or 2 s pause"
+talk_mode = "decide"             <span class="c"># decide | always-write | always-answer</span>
+wake_word = "MWB"
+
+[indicator]
+show = true
+toggle = "double-tap alt"        <span class="c"># double-tap right ctrl | double-tap shift | ctrl+alt+i | none</span>
+skin = "capsule"                 <span class="c"># dot | bars | ring | wave | orb | mic | pixel | your own folder</span>
+visible = "always"               <span class="c"># or "while-active"</span>
+size = "small"
+position = "bottom-centre"
+opacity = 0.85
+live_words = true
+hide_in_fullscreen = true
+
+[dictation]
+threads = "auto"                 <span class="c"># set by the effort level: 4 at E2 on this laptop</span>
+idle_unload_min = 15
+polish = { outlook = "formal", ms-teams = "plain", code = "off" }
+
+[meetings]
+detect = "any"                   <span class="c"># every app in config/vc_apps.yaml, plus unknown mic holders (asks)</span>
+ask_before_recording = true      <span class="c"># on for the first week</span>
+personal_apps = "ask"            <span class="c"># WhatsApp, Discord, Telegram, Phone Link</span>
+keep_audio = false
+
+<span class="c"># Effort levels are not in this file: the setup screen stores them per machine (§12.6).</span>
+
+[journal]
+repo_roots = ['C:\Users\parmahaj\Documents\New folder']
+git_author = "auto"              <span class="c"># read from git config user.email</span>
+activity_sample_s = 10
+denylist = ["*bank*", "*WhatsApp*"]
+
+[llm]
+route = "api"                    <span class="c"># api | local; a skill can override it</span>
+provider = "groq"                <span class="c"># groq | openai | openrouter | gemini | azure | custom, as in AI-App</span>
+model = "openai/gpt-oss-120b"
+quick_model = "openai/gpt-oss-20b"
+local_only = ["email-style"]     <span class="c"># these skills never send text out</span>
+when_api_fails = "local"         <span class="c"># local | queue</span>
+sync_check = "weekly"            <span class="c"># and after any change to a prompt or a model</span>
+<span class="c"># The key is in Windows Credential Manager. The local model's path is per machine (§12.6).</span></code></pre>
+
+<h3><span class="n">16.4</span>Setup on this laptop</h3>
+<div class="code-h">PowerShell, user mode, no admin</div>
+<pre><code><span class="c"># 1. MWB's own environment, with Python's built-in venv. Nothing to download for this step.</span>
+cd "C:\Users\parmahaj\Documents\New folder\MWB"
+py -3.14 -m venv .venv
+
+<span class="c"># 2. Phase 0 libraries: exact versions, 0.4 MB in total, both with Python 3.14 wheels</span>
+.venv\Scripts\python.exe -m pip install PyAudioWPatch==0.2.12.9 comtypes==1.4.17
+<span class="c">#    Phase 1 adds the indicator and the tray: pillow==12.3.0 pystray==0.19.5 (7.3 MB)</span>
+
+<span class="c"># 3. The speech worker reuses AI-App's proven environment at first</span>
+$env:MWB_ASR_PYTHON = "C:\Users\parmahaj\Documents\New folder\AI-App\addon\parakeet\.venv\Scripts\pythonw.exe"
+
+<span class="c"># 4. llama.cpp: already installed (build 11015) in C:\Users\parmahaj\Tools\llamacpp. Download only if it goes missing.</span>
+<span class="c"># 5. Models: already here. whisper small and turbo in %LOCALAPPDATA%\MWB\models; Qwen3.5 2B and 4B in Tools\llamacpp\models.</span>
+<span class="c"># 6. API key: paste it once in Settings; MWB keeps it in Windows Credential Manager.</span>
+<span class="c"># 7. Calibrate and record the results</span>
+powershell -ExecutionPolicy Bypass -File scripts\bench.ps1</code></pre>
+
+<h3><span class="n">16.5</span>Everything MWB downloads</h3>
+<p>No more models and no programs: Parakeet, both whisper models, llama.cpp and the Qwen3.5 fallback are already on this laptop. The Qwen3.5 models and whisper turbo were downloaded on 12 October, at your request. What remains are small Python libraries from PyPI, the official Python package site. They are installed only into <code>MWB\.venv</code>, each shown with its size and installed after you approve it. Deleting that folder removes them all.</p>
+<div class="tbl dense"><table>
+<thead><tr><th>Library</th><th>When</th><th class="num">Size</th><th>Why</th></tr></thead>
+<tbody>
+<tr><th scope="row">PyAudioWPatch 0.2.12.9</th><td>Phase 0</td><td class="num">0.10 MB</td><td>Records your mic and the call audio (P0-1, P0-7)</td></tr>
+<tr><th scope="row">comtypes 1.4.17</th><td>Phase 0</td><td class="num">0.30 MB</td><td>Talks to Outlook (P0-3) and reads browser tab titles (P0-5)</td></tr>
+<tr><th scope="row">Pillow 12.3.0</th><td>Phase 1</td><td class="num">7.24 MB</td><td>Draws the indicator skins</td></tr>
+<tr><th scope="row">pystray 0.19.5, six 1.17.0</th><td>Phase 1</td><td class="num">0.06 MB</td><td>The tray icon</td></tr>
+<tr><th scope="row">soundfile 0.14</th><td>Phase 2, optional</td><td class="num">~1 MB</td><td>Compresses meeting audio to Opus; without it, temporary audio stays as WAV</td></tr>
+<tr><th scope="row">soundcard, numpy, cffi</th><td>Only if PyAudioWPatch fails P0-1</td><td class="num">12.9 MB</td><td>The backup recorder</td></tr>
+<tr><th scope="row">truststore</th><td>Only if the company network blocks the API's HTTPS</td><td class="num">&lt; 0.1 MB</td><td>Lets Python trust the Windows certificate store</td></tr>
+</tbody></table></div>
+<p class="small">Later, and only if you choose: Qwen3.5 9B (about 6 GB) on a laptop with more memory. Calls to the Groq API are network traffic, not downloads; they carry text only, once you add your key.</p>
+</section>

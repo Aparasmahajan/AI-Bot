@@ -1,0 +1,63 @@
+
+<section id="s4" class="sec">
+<h2><span class="n">4</span>Your laptop today</h2>
+<p class="lead">Everything here was read from the machine on 11 October 2026 through WMI, the registry and the process list. These numbers set every budget in this document.</p>
+
+<h3><span class="n">4.1</span>Hardware</h3>
+<div class="tbl"><table>
+<thead><tr><th>Part</th><th>What is installed</th><th>What it means for MWB</th></tr></thead>
+<tbody>
+<tr><th scope="row">Model</th><td>HP EliteBook 840 G8, x64, managed by corporate IT</td><td>Install everything in user mode. No admin rights, no drivers.</td></tr>
+<tr><th scope="row">CPU</th><td>Intel Core i7-1185G7, 4 cores / 8 threads, 3.0 GHz base, 12 MB L3</td><td>whisper.cpp reports AVX-512 and AVX-512 VNNI, which speed up int8 models. MWB never takes more than 4 threads at once.</td></tr>
+<tr><th scope="row">Graphics</th><td>Intel Iris Xe, integrated, shares system RAM</td><td>No CUDA. Vulkan or OpenVINO can use it, but LLM output speed is still capped by RAM bandwidth. CPU is the default; Phase 0 tests Vulkan.</td></tr>
+<tr><th scope="row">NPU</th><td>None. Tiger Lake predates NPUs.</td><td>No Copilot+ on-device models. Plan for the CPU.</td></tr>
+<tr><th scope="row">Memory</th><td>16 GB DDR4-3200, one stick in one of two slots</td><td>Single channel, 25.6 GB/s peak. LLM output speed scales with bandwidth, so this halves it (§4.3).</td></tr>
+<tr><th scope="row">Free memory</th><td>0.52 GB at the first reading, 3.0 GB later. 22.2 of 39.7 GB committed, pagefile in use.</td><td>MWB must be tiny at idle and load models only when asked (§11).</td></tr>
+<tr><th scope="row">Storage</th><td>Kingston NV2 500 GB NVMe, 114 GB free</td><td>Room for models of 0.15 to 6 GB each. Fast enough that paging is survivable for batch jobs.</td></tr>
+<tr><th scope="row">Audio</th><td>Intel Smart Sound digital mic array, Realtek speakers</td><td>A mic lane and a loopback lane are both available. A headset improves accuracy and removes echo.</td></tr>
+<tr><th scope="row">OS</th><td>Windows 11 Enterprise 25H2 (build 26200), Microsoft Defender for Endpoint running</td><td>Avoid anything that looks like a keylogger or a disguised process (§13, §15).</td></tr>
+<tr><th scope="row">Power</th><td>Balanced plan. On battery at 78 % during the audit, on AC later.</td><td>Batch jobs wait for AC power, or run when you ask.</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">4.2</span>Where the memory goes</h3>
+<figure class="fig">
+  <div class="fig-frame">{{fig:ram}}</div>
+  <figcaption><b>Figure 4.1</b>Working set by app at the first reading, summed across each app's processes. Pages shared between processes are counted in each, so the bars run slightly high. Free memory at that moment was 0.52 GB.</figcaption>
+</figure>
+<p>Two browsers and the Claude app hold about 9 GB between them. Wispr Flow holds 1.5 GB all day for a single job, dictation. MWB has to do far more than that job and still stay under Wispr Flow's line for most of the day. Figure 11.2 shows how.</p>
+
+<h3><span class="n">4.3</span>Findings</h3>
+<div class="box find"><span class="lbl">Finding 1 · cheapest speed-up</span>
+<p>The only memory stick is a Crucial CT16G4SFRA32A (16 GB DDR4-3200) in one of two slots, so memory runs single channel. A matching second stick gives 32 GB and dual channel at 51.2 GB/s. Local LLM output speed is limited by memory bandwidth, so it roughly doubles. The integrated graphics also get the dual-channel memory Intel specifies for full Iris Xe performance. HP lists the 840 G8 at up to 64 GB (2 × 32 GB). On a managed laptop this needs IT's approval.</p>
+</div>
+<div class="box find"><span class="lbl">Finding 2 · replace, don't stack</span>
+<p>Wispr Flow is running as 11 processes holding about 1.5 GB. MWB's dictation is built to replace it. Running both doubles the memory cost, and the two apps would compete for the microphone and for hotkeys.</p>
+</div>
+<div class="box"><span class="lbl">Note · Python</span>
+<p>The <code>python</code> command on the PATH is the Microsoft Store placeholder and prints "Python was not found". Python 3.14.7 is installed and works through the launcher as <code>py -3.14</code>. Its standard library already includes SQLite 3.50 with full-text search (FTS5) and Tkinter 9.0. MWB uses both, so the always-on core needs very few extra packages.</p>
+</div>
+
+<h3><span class="n">4.4</span>Software already on the machine</h3>
+<div class="tbl"><table>
+<thead><tr><th>Item</th><th>Version or state</th><th>Use in MWB</th></tr></thead>
+<tbody>
+<tr><th scope="row">Python</th><td class="mono">3.14.7 via py launcher</td><td>Core and workers</td></tr>
+<tr><th scope="row">onnxruntime, onnx-asr</th><td class="mono">1.30.0, 0.12.0</td><td>In AI-App's Parakeet environment. Proven on this laptop (§6).</td></tr>
+<tr><th scope="row">Parakeet model</th><td class="mono">631 MB in the Hugging Face cache</td><td>Reused. No download needed.</td></tr>
+<tr><th scope="row">whisper.cpp</th><td class="mono">v1.9.2 BLAS build in AI-App\addon</td><td>Hindi and Hinglish fallback</td></tr>
+<tr><th scope="row">Git</th><td class="mono">2.55, identity paras-azalio</td><td>The commit collector filters by your configured author email.</td></tr>
+<tr><th scope="row">Git repositories</th><td class="mono">27 under Documents\New folder</td><td>Default scan root for the journal</td></tr>
+<tr><th scope="row">Microsoft 365 Apps</th><td>Classic Outlook (one profile, COM registered). New Outlook also installed.</td><td>Mail and calendar access through COM (§9.4)</td></tr>
+<tr><th scope="row">Video calls</th><td>New Teams installed. Zoom desktop not installed. Meet, Zoom and Webex can also run in Brave or Edge.</td><td>Detection covers every VC app, desktop or browser (§9.3)</td></tr>
+<tr><th scope="row">Browsers</th><td>Brave (main), Edge</td><td>The Today page opens in a tab</td></tr>
+<tr><th scope="row">llama.cpp</th><td class="mono">build 11015 (Sept 2026), CPU and Vulkan, in C:\Users\parmahaj\Tools\llamacpp</td><td>Runs the local fallback model (§12.7) and loads Qwen3.5, so nothing to download.</td></tr>
+<tr><th scope="row">Language models</th><td class="mono">Qwen3.5 2B and 4B, 4-bit GGUF, and the 4B's vision file; 4.65 GB in Tools\llamacpp\models</td><td>Downloaded on 12 October and checked against Hugging Face. The 2B is the everyday local fallback and the 4B handles code and the journal. They replaced Qwen2.5-Coder 3B and 7B and Qwen2.5-VL 3B (8.75 GB), which were deleted for good on 12 October at your request.</td></tr>
+<tr><th scope="row">LM Studio</th><td class="mono">0.4.25, with its own llama.cpp runtimes</td><td>Not needed by MWB. Its model folder and Tools\llamacpp\models share the same files through hard links.</td></tr>
+<tr><th scope="row">whisper small</th><td class="mono">ggml-small.bin, 487 MB, multilingual</td><td>Found in an old AI-App copy, identical to Hugging Face's file (SHA-256 checked) and copied to %LOCALAPPDATA%\MWB\models. For Hindi and Hinglish (§6.3).</td></tr>
+<tr><th scope="row">whisper large-v3-turbo</th><td class="mono">ggml-large-v3-turbo-q5_0.bin, 574 MB, multilingual</td><td>Downloaded on 12 October and checked against Hugging Face. Slower than real time on this CPU (§6.3), so it is for a stronger laptop or overnight re-runs.</td></tr>
+<tr><th scope="row">Also present</th><td>Node.js 24, VS Code, Docker Desktop, WSL, PowerToys</td><td>Not needed by MWB</td></tr>
+<tr><th scope="row">Not installed</th><td>Ollama, ffmpeg, uv</td><td>Not needed. MWB uses Python's built-in venv (§16.4).</td></tr>
+<tr><th scope="row">Python libraries MWB needs</th><td>None installed yet, in any environment</td><td>Phase 0 adds PyAudioWPatch and comtypes (0.4 MB); Phase 1 adds Pillow and pystray (7.3 MB). They go into MWB's own folder only (§16.5).</td></tr>
+</tbody></table></div>
+<p class="small">The first audit, on 11 October, checked only the PATH and the Hugging Face cache, so it missed llama.cpp, LM Studio, the Qwen2.5 files and whisper small. A full file search corrected this table on 12 October.</p>
+</section>

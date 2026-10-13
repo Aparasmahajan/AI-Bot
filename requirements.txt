@@ -1,0 +1,13 @@
+# MWB's Python libraries, installed only into MWB\.venv (design document §16.5).
+# Exact versions, with the SHA-256 that PyPI publishes for each file, so pip refuses anything else.
+# Install: .venv\Scripts\python.exe -m pip install --require-hashes --only-binary :all: -r requirements.txt
+
+# Phase 0, approved 13 Oct 2026
+# PyAudioWPatch: mic and call audio (P0-1, P0-7). Released 6 Oct 2026 by the project's own GitHub workflow (PyPI provenance).
+PyAudioWPatch==0.2.12.9 \
+    --hash=sha256:dc3ae964530ffe70119a1e2f5b76c661b676aa1cf1b9755d8ecafe081ee85f53
+# comtypes: Outlook over COM (P0-3) and browser tab titles (P0-5). Pure Python. Released 21 Sep 2026.
+comtypes==1.4.17 \
+    --hash=sha256:4e0a221dde2c589b82977bed802efd71cd5eb67a380347b732e02735e597f586
+
+# Phase 1, not installed yet: pillow==12.3.0, pystray==0.19.5, six==1.17.0
