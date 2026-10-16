@@ -7,17 +7,18 @@ MWB is the working name of a Wispr-Flow-like work assistant for Windows. It is b
 - records and labels meetings in any call app;
 - writes your end-of-day journal with real commit IDs.
 
-**Status, 13 October 2026:**
-- The design is complete (Rev F) and an interactive demo exists.
-- The first app code is in: the API key window.
-- Phase 0, about three days of tests on the laptop, started on 12 October:
-  - the laptop's fingerprint is recorded;
+**Status, 16 October 2026:**
+- The design document is at Rev G: it now describes MWB as built on 14 October, with Phase 0's measured numbers. The interactive demo was brought in line too.
+- **Phase 3, understanding, is built**: meeting notes with action items, Work or Timepass labels, email, code, rewrite and answers, through Groq with the local model as a fallback.
+- **Phase 2, meetings, is built too**: calls in any app are found, recorded with your permission and transcribed on this laptop; see TODO.md for what still needs real calls.
+- **Phase 1, dictation, is built and ready for you to try:** double-click `Start MWB.cmd`. The checks that need your voice and your apps are still to do; see [TODO.md](TODO.md).
+- Phase 0, the tests on this laptop, is nearly done:
+  - the keys (P0-2) passed: 50 of 50 double taps for both Caps Lock and Alt;
   - reading Outlook passed;
   - whisper small keeps up with calls when the laptop is plugged in;
-  - the two Python libraries are installed;
-  - recording both sides of a call and reading Outlook through comtypes passed their technical checks;
+  - recording both sides of a call passed its technical check;
   - Groq passed all 42 checks on MWB's ten saved tasks, with first words after 0.6 s;
-  - the comparison with the local models waits for free memory, and the key and call tests wait for real use.
+  - the comparison with the local models waits for free memory, and the voice and call tests wait for real use.
 
 See [TODO.md](TODO.md).
 
@@ -26,8 +27,10 @@ See [TODO.md](TODO.md).
 | File | What it is |
 |---|---|
 | [TODO.md](TODO.md) | What to do next, the open decisions, and what's done |
-| `Set API key.cmd` | Double-click to add your Groq key. It is checked with Groq, then kept in Windows Credential Manager, never in a file |
-| [mwb/](mwb/) | The app's code. So far: the API key window, Credential Manager storage and the Groq key check |
+| `Start MWB.cmd` | Double-click to start MWB. It lives in the tray, next to the clock; starting it twice does nothing |
+| `Set API key.cmd` | Double-click to add your Groq key. It is checked with Groq, then kept in Windows Credential Manager, never in a file. The tray menu opens the same window |
+| [mwb/](mwb/) | The app's code: the core, dictation, the speech worker, the tray and the indicator, and the API key window |
+| [tests/](tests/) | Automatic tests, the 20 dictation phrases and the Phase 1 benchmark |
 | [requirements.txt](requirements.txt) | The Python libraries MWB uses, with exact versions and checksums; installed only into `.venv` |
 | [docs/MWB-POC-Design.html](docs/MWB-POC-Design.html) | The full design specification; open it in a browser |
 | [docs/MWB-Demo.html](docs/MWB-Demo.html) | Interactive demo of the UI and the main flows |
@@ -35,6 +38,31 @@ See [TODO.md](TODO.md).
 | [docs/bench/](docs/bench/) | Benchmark scripts and measured results |
 | [docs/src/](docs/src/) | Sources of the design document and the demo |
 | [CLAUDE.md](CLAUDE.md) | Context and working rules for AI assistants on this project |
+
+## Using MWB (Phase 1: dictation)
+
+| Do this | And MWB |
+|---|---|
+| Double-tap **Caps Lock**, talk, then pause for 2 s or double-tap again | Types what you said where your cursor is. Caps Lock stays as it was |
+| Hold **Ctrl+Shift+Alt+Space**, talk, let go | The same, push-to-talk. (Ctrl+Alt+Space belongs to another app on this laptop) |
+| Press **Esc** while it listens | Cancels; nothing is typed |
+| Double-tap **Alt** | Shows or hides the small indicator above the taskbar |
+| Double-tap **Caps Lock** and ask, with the cursor outside a text box, or start with "MWB, ..." | Answers in a small card. Questions about your day ("What are my open action items?") are answered from your own meetings, notes and calendar, with citations |
+| Select an email, press **Ctrl+Alt+E** | Explains it: what they want, deadlines as real dates, reply ideas. Hold the keys and speak to draft a reply; MWB never sends it |
+| Select code, press **Ctrl+Alt+K** | Explains it, lists problems and suggests a better version (Replace, or a VS Code diff). Hold the keys and describe code to have it written at the cursor |
+| Select text, hold **Ctrl+Alt+R** and say "shorter" or "more formal" | Rewrites it; Replace puts it back |
+| **Ctrl+Alt+M** | Starts or stops recording a call by hand. Calls in Teams, Zoom, Meet and others are found by themselves, and MWB asks before recording |
+| **Ctrl+Alt+J** | Opens the Today page in your browser: meetings, transcripts and search |
+| **Ctrl+Alt+P** | Pauses or resumes MWB |
+| **Ctrl+Alt+Shift+W** | Quits MWB |
+
+Say "new line", "new paragraph", "bullet point", "comma", "full stop" or "question mark" for layout. "Scratch that" replaces what you just said. Fillers like "um" and "uh" are dropped. Your own spellings go in `%APPDATA%\MWB\dictionary.txt`, one per line: `preya -> Priya`.
+
+The first dictation after MWB starts, or after 15 minutes without one, waits while the speech engine loads. That takes 10–40 s when memory is tight. After that, text arrives about a second after you finish.
+
+**Meetings (Phase 2).** When an app has used the mic for 20 s, MWB asks "Record this call?" in a small card at the bottom right. It always asks in its first week, and always for personal apps such as WhatsApp. While it records, the tray icon and the indicator get an orange ring. Your voice and the other side are transcribed on this laptop with whisper small, which handles Hindi and Hinglish. That happens during the call on mains power, or after it on battery, and no audio is kept. The tray can also import a transcript that Teams, Zoom or Webex made (.vtt, .docx or .txt).
+
+Where it keeps things: settings in `%APPDATA%\MWB\config.toml` (tray menu, Settings file), your dictation history in `%LOCALAPPDATA%\MWB\mwb.db`, and logs in `%LOCALAPPDATA%\MWB\logs`. Logs never contain what you said.
 
 ## How it works, in short
 

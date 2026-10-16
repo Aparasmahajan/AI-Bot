@@ -1,0 +1,114 @@
+# Call apps MWB recognises (design §9.3). New apps go here, without code changes. The design sketched this file as
+# YAML; it is TOML because Python reads TOML without an extra library.
+#
+#   packaged  Store-app names, as Windows lists them under ...\ConsentStore\microphone
+#   exe       desktop programs, by file name
+#   tabs      text in a browser window title that marks a meeting tab
+#   policy    record | ask | never      personal = true: always ask, whatever the policy
+#
+# Your own choices ("Never for Slack", "always record this app") are kept in MWB's database and win over these.
+
+browsers = ["chrome.exe", "msedge.exe", "brave.exe", "firefox.exe", "opera.exe", "vivaldi.exe"]
+# Programs that hold the mic without being a call: dictation and recorders. MWB's own process is always left out.
+not_calls = ["Wispr Flow.exe", "WisprFlow.exe", "Microsoft.WindowsSoundRecorder_8wekyb3d8bbwe", "SoundRecorder.exe"]
+
+[[app]]
+id = "teams"
+name = "Teams"
+packaged = ["MSTeams_8wekyb3d8bbwe"]             # confirmed on this laptop (P0-5, 13 Oct 2026)
+exe = ["ms-teams.exe", "Teams.exe"]
+tabs = ["| Microsoft Teams"]
+policy = "record"
+
+[[app]]
+id = "zoom"
+name = "Zoom"
+exe = ["Zoom.exe"]
+tabs = ["Zoom Meeting", "Zoom Workplace"]
+policy = "record"
+
+[[app]]
+id = "meet"
+name = "Google Meet"
+tabs = ["Meet –", "Meet -", "Google Meet"]
+policy = "record"
+
+[[app]]
+id = "webex"
+name = "Webex"
+exe = ["Webex.exe", "CiscoCollabHost.exe", "atmgr.exe"]
+tabs = ["Webex"]
+policy = "record"
+
+[[app]]
+id = "slack"
+name = "Slack huddle"
+exe = ["slack.exe"]
+tabs = ["Huddle"]
+policy = "ask"
+
+[[app]]
+id = "goto"
+name = "GoTo Meeting"
+exe = ["g2mcomm.exe", "GoTo.exe", "GoToMeeting.exe"]
+tabs = ["GoTo Meeting"]
+policy = "ask"
+
+[[app]]
+id = "ringcentral"
+name = "RingCentral"
+exe = ["RingCentral.exe", "RingCentralMeetings.exe"]
+tabs = ["RingCentral"]
+policy = "ask"
+
+[[app]]
+id = "zoho"
+name = "Zoho Meeting"
+tabs = ["Zoho Meeting"]
+policy = "ask"
+
+[[app]]
+id = "jitsi"
+name = "Jitsi"
+tabs = ["Jitsi Meet"]
+policy = "ask"
+
+[[app]]
+id = "whereby"
+name = "Whereby"
+tabs = ["Whereby"]
+policy = "ask"
+
+[[app]]
+id = "whatsapp"
+name = "WhatsApp"
+packaged = ["5319275A.WhatsAppDesktop_cv1g1gvanyjgm"]
+exe = ["WhatsApp.exe"]
+tabs = ["WhatsApp"]
+policy = "ask"
+personal = true
+
+[[app]]
+id = "discord"
+name = "Discord"
+exe = ["Discord.exe"]
+tabs = ["Discord"]
+policy = "ask"
+personal = true
+
+[[app]]
+id = "telegram"
+name = "Telegram"
+packaged = ["TelegramMessengerLLP.TelegramDesktop_t4vj0pshhgkwm"]
+exe = ["Telegram.exe"]
+tabs = ["Telegram"]
+policy = "ask"
+personal = true
+
+[[app]]
+id = "phonelink"
+name = "Phone Link"
+packaged = ["Microsoft.YourPhone_8wekyb3d8bbwe"]
+exe = ["PhoneExperienceHost.exe"]
+policy = "ask"
+personal = true

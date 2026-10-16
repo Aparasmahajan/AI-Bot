@@ -186,19 +186,30 @@ h1{margin:6px 0 0;font:700 clamp(28px,3.4vw,40px)/1.08 var(--f-display);letter-s
 .sk-pixel i:nth-child(2n){animation-delay:-.3s!important}.sk-pixel i:nth-child(3n){animation-delay:-.6s!important}
 .ind[data-state="done"] .sk-pixel i,.ind[data-state="idle"] .sk-pixel i:nth-child(5){opacity:1}
 
-/* result card */
-.card{position:absolute;left:50%;bottom:calc(var(--tb) + 5em);transform:translateX(-50%);width:min(31em,92%);max-height:calc(100% - var(--tb) - 6.5em);
-  overflow:auto;background:var(--win);border:1px solid var(--win-line);border-radius:12px;box-shadow:var(--shadow);z-index:35;display:flex;flex-direction:column}
-.card-h{display:flex;gap:.6em;align-items:center;padding:.6em .8em;border-bottom:1px solid var(--win-line);position:sticky;top:0;background:var(--win)}
+/* result panel: opens in the indicator's place, just above the pill, and is always dark like it */
+.card{position:absolute;left:50%;bottom:calc(var(--tb) + 3.6em);transform:translateX(-50%);width:min(31em,92%);max-height:calc(100% - var(--tb) - 5em);
+  overflow:auto;overscroll-behavior:contain;border-radius:16px;box-shadow:0 14px 34px rgba(0,0,0,.4);z-index:35;display:flex;flex-direction:column;
+  --ink:#E2E9F6; --ink-2:#A9B7CF; --ink-3:#96A5C0; --wash:rgba(255,255,255,.08); --cobalt:#8FB2FF; --cobalt-wash:#15315F;
+  --signal:#FF8D55; --signal-wash:#3B2522; --amber:#F1B65C; --amber-wash:#3A301C; --ok:#70D49C; --ok-wash:#123526;
+  --win:var(--pill); --win-2:rgba(255,255,255,.08); --win-line:rgba(255,255,255,.14); --code:rgba(0,0,0,.28);
+  background:var(--pill);color:var(--ink);border:1px solid var(--pill-line);animation:rise .2s ease-out}
+.card.out{animation:sink .18s ease-in forwards}
+@keyframes rise{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes sink{to{opacity:0;transform:translate(-50%,10px)}}
+.card-h{display:flex;gap:.6em;align-items:center;padding:.65em .9em .3em;position:sticky;top:0;background:var(--win)}
 .card-h b{flex:1;min-width:0;font:600 1em/1.25 var(--f-display)}
 .card-h .x{border:0;background:none;color:var(--ink-3);font-size:1.1em;padding:0 .2em}
 .card-b{padding:.75em .9em;display:grid;gap:.6em;font-size:.95em}
 .card-b p{margin:0}
 .card-b ul,.card-b ol{margin:0;padding-left:1.2em;display:grid;gap:.25em}
-.card-f{display:flex;flex-wrap:wrap;gap:.5em;padding:.6em .8em;border-top:1px solid var(--win-line);align-items:center}
+.card-f{display:flex;flex-wrap:wrap;gap:.5em;padding:.5em .9em .75em;align-items:center;position:sticky;bottom:0;background:var(--win)}
 .card-f .src{flex:1;min-width:10em;color:var(--ink-3);font-size:.8em}
 .cbtn{border:1px solid var(--win-line);background:var(--win-2);border-radius:6px;padding:.3em .8em;font-size:.88em}
 .cbtn.pri{background:var(--cobalt);border-color:var(--cobalt);color:var(--sheet)}
+.card .cbtn{border-radius:999px;border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.08);color:var(--ink);font-weight:600}
+.card .cbtn:hover{background:rgba(255,255,255,.18)}
+.card .cbtn.pri{background:#4F7CFF;border-color:#4F7CFF;color:#fff}
+.card .cbtn.pri:hover{background:#6794FF}
 .cbtn.pressed,.toast button.pressed{outline:2px solid var(--cobalt);outline-offset:1px}
 .chip{display:inline-flex;align-items:center;gap:.35em;border-radius:999px;padding:.1em .6em;font:500 .76em/1.5 var(--f-mono);white-space:nowrap;border:1px solid transparent}
 .chip::before{content:"";width:.5em;height:.5em;border-radius:50%;background:currentColor}
@@ -536,7 +547,7 @@ const APPS = {
   brave: () => `<div class="wbar"><span class="wapp a-br">B</span><span class="wtitle">Browser · Kafka documentation</span><span class="wctl">–&nbsp;&nbsp;▢&nbsp;&nbsp;✕</span></div>
     <div class="wbody article"><span class="addr">kafka.apache.org/documentation</span><h3>Consumers</h3>
     <p>Consumers label themselves with a consumer group name, and each record published to a topic is delivered to one consumer instance within each subscribing consumer group.</p>
-    <p>No text box is selected here, so a question you ask by voice gets an answer card instead of being typed.</p></div>`,
+    <p>No text box is selected here, so a question you ask by voice is answered above the indicator instead of being typed.</p></div>`,
   call: () => `<div class="wbar"><span class="wapp a-tm">T</span><span class="wtitle">Sprint planning · Teams meeting</span><span class="chip rec">LIVE</span></div>
     <div class="wbody"><div class="tiles"><div class="tile" id="t-kapil"><span><b>KR</b>Kapil</span></div><div class="tile" id="t-priya"><span><b>PN</b>Priya</span></div><div class="tile" id="t-me"><span><b>You</b>mic on</span></div>
     <div class="tile"><span><b>AS</b>Anil</span></div><div class="tile"><span><b>MJ</b>Meera</span></div><div class="tile"><span><b>+1</b>Sam</span></div></div>
@@ -561,20 +572,33 @@ function setView(v) {
 function routeChip(local) {
   return local ? '<span class="chip local">On this laptop · Qwen3.5 2B</span>' : '<span class="chip api">API · Groq gpt-oss-120b</span>';
 }
+let cardTimer = 0;
 function showCard({ icon = 'M', title, chip = '', body, src = '', actions = [] }) {
   const c = $('#card');
+  clearTimeout(cardTimer); c.classList.remove('out');
+  actions = [...actions.filter((a) => !a.pri), ...actions.filter((a) => a.pri)];   // the main button sits on the right
   c.innerHTML = `<div class="card-h"><span class="wapp a-mwb">${icon}</span><b>${title}</b>${chip}<button class="x" type="button" data-act="close" aria-label="Close">✕</button></div>
     <div class="card-b">${body}</div>
-    <div class="card-f"><span class="src">${src}</span>${actions.map((a) => `<button type="button" class="cbtn${a.pri ? ' pri' : ''}" data-act="${a.k}">${a.label}</button>`).join('')}</div>`;
+    <div class="card-f"><span class="src">${src}${src ? ' · ' : ''}Esc to close</span>${actions.map((a) => `<button type="button" class="cbtn${a.pri ? ' pri' : ''}" data-act="${a.k}">${a.label}</button>`).join('')}</div>`;
   c.hidden = false;
   c.scrollTop = 0;
 }
-function hideCard() { $('#card').hidden = true; }
+function hideCard() {
+  const c = $('#card'); if (c.hidden || c.classList.contains('out')) return;
+  c.classList.add('out'); clearTimeout(cardTimer);
+  cardTimer = setTimeout(() => { c.hidden = true; c.classList.remove('out'); }, RM ? 0 : 180);
+}
+// Copy, Insert and Replace finish the panel: it closes and the pill shows a green tick for about 1.2 s
+function finishCard(label) {
+  hideCard(); setInd('done', label);
+  setTimeout(() => { if (S.state === 'done' && $('#indLabel').textContent === label) setInd(S.paused ? 'paused' : S.rec ? 'recording' : 'idle'); }, 1200);
+}
 const cardActions = {};
+$('#card').addEventListener('mousedown', (e) => e.preventDefault());   // like MWB, clicking the panel never takes the focus
 $('#card').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
   const k = b.dataset.act;
-  if (k === 'close') { hideCard(); log('card closed'); return; }
+  if (k === 'close') { hideCard(); log('panel closed'); return; }
   if (cardActions[k]) cardActions[k](b);
 });
 function toast({ title, text, kind = '', actions = [], ttl = 6500, auto = null }) {
@@ -604,7 +628,7 @@ function renderHood() {
   const sp = S.speech;
   const procs = [
     { name: 'MWB core', st: 'Always on: hotkeys, tray, meeting detector, scheduler', mem: '40 MB', cls: '' },
-    { name: 'Speech worker · Parakeet', st: sp.on ? (sp.mode === 'meeting' ? `Meeting mode: ${th[1]} threads, low priority, memory kept flat` : `Warm, ${th[0]} threads · exits after ${mmss(sp.until - S.clock)} idle`) : 'Off · starts when you talk or a call starts', mem: sp.on ? '0.99 GB' : '0', cls: sp.on ? (S.rec ? 'rec' : 'on') : '' },
+    { name: 'Speech worker · Parakeet', st: sp.on ? (sp.mode === 'meeting' ? `Paused for the call: meetings use whisper-cli, ${th[1]} threads, low priority` : `Warm, ${th[0]} threads · exits after ${mmss(sp.until - S.clock)} idle`) : 'Off · starts when you talk', mem: sp.on ? '0.99 GB' : '0', cls: sp.on ? (S.rec ? 'rec' : 'on') : '' },
     { name: `Language worker · Qwen3.5 ${S.llm.model}`, st: S.llm.on ? `Running on this laptop · exits after ${mmss(S.llm.until - S.clock)} idle` : (local ? 'Off · starts when a question needs it' : 'Off · the API is used, so no local model is loaded'), mem: S.llm.on ? (S.llm.model === '4B' ? '2.42 GB' : '1.25 GB') : '0', cls: S.llm.on ? 'loc' : '' },
     { name: 'Meeting recorder', st: S.rec ? 'Recording two lanes: you (mic) and them (speakers)' : 'Off · checks which app uses the mic every 5 s', mem: S.rec ? 'in speech' : '0', cls: S.rec ? 'rec' : '' },
   ];
@@ -697,7 +721,7 @@ const SC = [
      mark(3); log('Caps Lock tapped twice → finish'); setInd('working'); await wait(me, 700);
      mark(4); log('clean-up in 3 ms: removed "um" and "so"; "comma" → ","; "full stop" → "."');
      mark(5); await typeInto(me, "Quick update: the payment retry fix is merged, and I'll share the build by Wednesday.");
-     log('pasted into Outlook with Ctrl+V; clipboard restored after 300 ms', 'ok'); setInd('done'); await wait(me, 1400); setInd('idle');
+     log('pasted into Outlook with Ctrl+V; clipboard restored after 400 ms', 'ok'); setInd('done'); await wait(me, 1400); setInd('idle');
    } },
  { id: 'fix', title: 'Fix a mistake while you talk',
    lead: 'You can change your mind mid-sentence. MWB keeps only what you meant.',
@@ -715,10 +739,10 @@ const SC = [
  { id: 'ask', title: 'Ask about your day',
    lead: 'The same double tap answers questions. MWB decides whether to type or answer.',
    steps: ['In the browser, with no text box selected, you double-tap Caps Lock and say: "MWB, what did I commit today?"',
-     'MWB sees the wake word "MWB" and no text box, so it answers in a card instead of typing.',
+     'MWB sees the wake word "MWB" and no text box, so it answers in a panel that rises out of the indicator instead of typing.',
      'The facts come from code: git on your repositories gives the commits and their exact IDs (SHAs).',
      'The language model only writes the sentence around those facts, and every SHA is checked against git before it is shown.',
-     'Esc closes the card; Copy puts the answer on the clipboard.'],
+     'Esc or × closes the panel. Copy puts the answer on the clipboard, and the pill shows a green "Copied" tick.'],
    async run(me) {
      setView('desktop'); setApp('brave'); setClock(16, 40);
      mark(0); log('Caps Lock tapped twice → talk'); await ensureSpeech(me); await talk(me, 'MWB what did I commit today');
@@ -743,7 +767,7 @@ const SC = [
      'MWB copies the selection, then puts your clipboard back.',
      'You say what you want: "more polite, one sentence".',
      'The language model rewrites it, through the API in about 1 to 2 seconds.',
-     'A card shows the result. Replace swaps it into your email. Nothing is sent.'],
+     'The result rises out of the indicator. Replace swaps it into your email, and the pill says "Replaced". Nothing is sent.'],
    async run(me) {
      setView('desktop'); setApp('outlookSel');
      mark(0); log('Ctrl+Alt+R held with text selected'); await wait(me, 600);
@@ -760,9 +784,9 @@ const SC = [
    lead: 'Long or unclear email: MWB tells you what it means and drafts a reply in your style.',
    steps: ['With an email open in Outlook, you press Ctrl+Alt+E.',
      'MWB reads the open email from classic Outlook, on your laptop.',
-     'The card explains it: who wants what, by when, and what you need to do.',
+     'A panel above the indicator explains it: who wants what, by when, and what you need to do.',
      'It drafts a reply in your style, learned once from your sent emails, on this laptop.',
-     '"Open as draft" puts it in an Outlook draft for you to edit. MWB never sends email.'],
+     '"Open as Outlook draft" puts it in a draft for you to edit, and the panel stays open. MWB never sends email.'],
    async run(me) {
      setView('desktop'); setApp('outlookRead');
      mark(0); log('Ctrl+Alt+E'); await wait(me, 500);
@@ -773,15 +797,15 @@ const SC = [
        body: `<p><b>In short:</b> Priya needs two things from you by <b>Thursday evening</b> to set up staging Kafka access.</p>
          <ul><li>Your manager's approval on ticket RITM0012345</li><li>The consumer group names you will use</li></ul>
          <p class="why">Draft reply</p><p>Hi Priya, thanks for setting this up. I've asked my manager to approve RITM0012345 today. The consumer groups will be order-service-retry and invoice-export. I'll confirm once the approval is in. Thanks</p>`,
-       src: 'MWB never sends email', actions: [{ k: 'draft', label: 'Open as draft', pri: true }, { k: 'copy', label: 'Copy' }] });
+       src: 'MWB never sends email', actions: [{ k: 'draft', label: 'Open as Outlook draft', pri: true }, { k: 'copy', label: 'Copy' }] });
      setInd('done'); await wait(me, 1400); setInd('idle');
    } },
  { id: 'code', title: 'Explain and speed up code',
    lead: 'Select code in any editor or browser and get an explanation and a faster version.',
    steps: ['You select code in VS Code and press Ctrl+Alt+K.',
      'MWB guesses the language from the window title: a Python file.',
-     'The card explains what the code does and where it can break.',
-     'It suggests a faster version as a diff. Replace swaps it in; Open diff shows it in VS Code.'],
+     'A panel above the indicator explains what the code does and where it can break.',
+     'It suggests a faster version as a diff. Replace swaps it in; Open diff in VS Code shows it there and keeps the panel open.'],
    async run(me) {
      setView('desktop'); setApp('vscode');
      mark(0); log('Ctrl+Alt+K with 8 lines selected'); await wait(me, 500);
@@ -792,7 +816,7 @@ const SC = [
          <ul><li><b>Slow:</b> it compares every pair, so 10,000 invoices means about 50 million comparisons.</li><li><b>Breaks:</b> an invoice without a "number" raises KeyError.</li></ul>
          <pre class="diff"><span class="del">-    duplicates = []</span><span class="del">-    for i in range(len(invoices)):</span><span class="del">-        for j in range(i + 1, len(invoices)):</span><span class="del">-            ...</span><span class="add">+    counts = Counter(inv.get("number") for inv in invoices if inv.get("number"))</span><span class="add">+    return [n for n, c in counts.items() if c &gt; 1]</span></pre>
          <p class="why">One pass instead of two nested loops; same result, in the same order.</p>`,
-       src: 'Check it with your tests before you commit', actions: [{ k: 'replace', label: 'Replace selection', pri: true }, { k: 'diff', label: 'Open diff' }] });
+       src: 'Check it with your tests before you commit', actions: [{ k: 'replace', label: 'Replace selection', pri: true }, { k: 'diff', label: 'Open diff in VS Code' }] });
      setInd('done'); await wait(me, 1400); setInd('idle');
    } },
  { id: 'meeting', title: 'A meeting starts',
@@ -800,13 +824,13 @@ const SC = [
    steps: ['A Teams call starts. Every 5 s MWB checks which app is using the mic, the same list Windows uses for the mic icon.',
      'In the first week MWB asks before recording. Personal apps like WhatsApp always ask.',
      'While recording, the indicator has an orange ring, and you (mic) and the others (speakers) are recorded separately.',
-     'The speech worker transcribes in the background at low priority, so the call stays smooth.',
+     'whisper small transcribes each 22–28 s piece in the background at low priority, live only on mains power, so the call stays smooth.',
      'When the call ends, the transcript is ready in about a minute, then the notes: summary, decisions and action items with owners.',
      'The meeting gets a Work or Timepass label with its reasons. One click flips it, and MWB learns from that.'],
    async run(me) {
      setView('desktop'); setClock(11, 0); setApp('call');
      mark(0); log('mic now used by ms-teams.exe → call detected: "Sprint planning" (calendar)', 'rec'); await wait(me, 600);
-     mark(1); const ans = await toast({ title: 'Record "Sprint planning"?', text: 'Teams is using your microphone. MWB will record you and the others on separate lanes.', actions: [{ k: 'rec', label: 'Record', pri: true }, { k: 'no', label: 'Not this time' }], auto: 'rec' });
+     mark(1); const ans = await toast({ title: 'Teams is using the microphone', text: 'Sprint planning. Record this call? MWB transcribes it on this laptop and keeps no audio.', actions: [{ k: 'never', label: 'Never for Teams' }, { k: 'no', label: 'Not this one' }, { k: 'rec', label: 'Record', pri: true }], auto: 'rec' });
      if (me.cancel) throw CANCEL;
      if (ans !== 'rec') { log('you chose not to record this call; it is logged from the calendar only'); setInd('idle'); markAll(); return; }
      mark(2); S.rec = true; speechOn('meeting'); setInd('recording', 'Recording'); log('recording two lanes: you (mic) and them (loopback)', 'rec');
@@ -818,7 +842,7 @@ const SC = [
        d.firstChild.textContent = lane === 'me' ? 'You' : who; d.lastChild.textContent = t; $('#tx') && $('#tx').append(d);
        document.querySelectorAll('.tile').forEach((x) => x.classList.remove('talk'));
        const tid = lane === 'me' ? 't-me' : who === 'Kapil' ? 't-kapil' : 't-priya'; const tile = document.getElementById(tid); if (tile) tile.classList.add('talk');
-       log(`${lane === 'me' ? 'me' : 'them'} lane: piece transcribed in the background`, 'speech');
+       log(`${lane === 'me' ? 'you' : 'them'} lane: piece transcribed by whisper-cli, then deleted`, 'speech');
        await wait(me, 1150);
      }
      mark(4); setClock(12, 0); S.rec = false; S.speech.mode = 'dictation'; S.speech.until = S.clock + 15 * 60; setApp('outlook'); hideCard();
@@ -836,16 +860,16 @@ const SC = [
    } },
  { id: 'down', title: 'When the API is down',
    lead: 'No network, or Groq does not answer: the local Qwen3.5 model takes over.',
-   steps: ['Your network drops, or the API does not answer within 10 seconds.',
+   steps: ['Your network drops, or the API sends no word within 20 seconds.',
      'MWB sends the same request to the local model instead: Qwen3.5 2B, kept in sync with the same prompts and checks.',
      'The language worker starts (about 4 seconds) and uses about 1.3 GB while it runs.',
-     'The answer is slower, about 10 words a second, but it arrives, and the card says it came from this laptop.',
+     'The answer is slower, about 10 words a second, but it streams into the panel, which says it came from this laptop.',
      'Five idle minutes later the worker exits and frees its memory. When the API is back, MWB uses it again.'],
    async run(me) {
      setView('desktop'); setApp('brave'); setClock(16, 55);
      mark(0); S.apiDown = true; renderHood(); log('network lost (demo)', 'rec');
      log('Caps Lock tapped twice → talk'); await ensureSpeech(me); await talk(me, 'MWB what is a Kafka consumer group');
-     setInd('working'); log('API: no answer in 10 s → fall back to the local model', 'llm');
+     setInd('working'); log('API: no word in 20 s → fall back to the local model', 'llm');
      mark(1); await wait(me, 500);
      mark(2); await language(me, 'answer');
      mark(3); showCard({ title: 'Kafka consumer group', chip: routeChip(true), body: '<p id="stream"></p>', src: 'Answered on this laptop: slower, but private and offline', actions: [{ k: 'copy', label: 'Copy' }] });
@@ -920,16 +944,16 @@ function stopRunning() { if (job && SC[lastIndex] && SC[lastIndex].id !== 'pause
 // ---------- card actions
 cardActions.copy = (b) => {
   const text = $('#card .card-b').innerText.trim();
-  const done = () => { b.textContent = 'Copied'; log('copied to the clipboard', 'ok'); };
+  const done = () => { finishCard('Copied'); log('copied to the clipboard', 'ok'); };
   try { navigator.clipboard.writeText(text).then(done, () => { b.textContent = 'Copy blocked here'; }); } catch (e) { b.textContent = 'Copy blocked here'; }
 };
 cardActions.replace = (b) => {
   const sel = document.getElementById('selText');
   if (sel) { sel.textContent = 'Could you please send me the build by Wednesday, and help me get access to Kafka?'; sel.classList.remove('sel'); }
-  hideCard(); log('selection replaced in Outlook; nothing was sent', 'ok');
+  finishCard('Replaced'); log(sel ? 'selection replaced in Outlook; nothing was sent' : 'selection replaced', 'ok');
 };
-cardActions.draft = () => { hideCard(); toast({ title: 'Draft opened in Outlook', text: 'Edit it and send it yourself. MWB never sends email.', kind: 'good', ttl: 4000 }); log('reply opened as an Outlook draft'); };
-cardActions.diff = () => { log('diff opened in VS Code (code --diff)'); };
+cardActions.draft = () => { toast({ title: 'Draft opened in Outlook', text: 'Edit it and send it yourself. MWB never sends email.', kind: 'good', ttl: 4000 }); log('reply opened as an Outlook draft; the panel stays open'); };
+cardActions.diff = () => { log('diff opened in VS Code (code --diff); the panel stays open'); };
 cardActions.flip = (b) => { b.textContent = 'Marked as Timepass'; log('you changed "Sprint planning" to Timepass; stored as an example for similar meetings'); };
 cardActions.today = () => { hideCard(); setView('today'); };
 
@@ -1077,11 +1101,11 @@ function renderSettings() {
       <div class="lv">${[['E1', 'Battery saver', 'Smallest models, 2 threads, nothing kept warm.'], ['E2', 'Balanced', 'Suggested for this laptop. Speech stays warm while you are active.'], ['E3', 'High', 'Two-pass notes and speaker separation. Slower on this laptop.'], ['E4', 'Max', 'Not available here: needs a GPU, or 32 GB in two sticks.']].map(([k, n, d]) => `<label class="${k === 'E4' ? 'dis' : ''}"><input type="radio" name="effort" value="${k}" ${S.effort === k ? 'checked' : ''} ${k === 'E4' ? 'disabled' : ''}><b>${k}</b><span><b style="font-family:var(--f-body)">${n}.</b> ${d}</span></label>`).join('')}</div>
     </section>
     <section class="set"><h3>Meetings</h3>
-      <div style="overflow-x:auto"><table class="pol"><thead><tr><th>App</th><th>When it uses the mic</th></tr></thead><tbody>${[['Teams', 'Record'], ['Zoom', 'Record'], ['Google Meet (browser)', 'Record'], ['Webex', 'Record'], ['Slack huddle', 'Record'], ['WhatsApp', 'Ask'], ['Discord', 'Ask'], ['Any other app', 'Ask once']].map(([a, p]) => `<tr><td>${a}</td><td><select aria-label="Policy for ${a}">${['Record', 'Ask', 'Ask once', 'Never'].map((o) => `<option ${o === p ? 'selected' : ''}>${o}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>
+      <div style="overflow-x:auto"><table class="pol"><thead><tr><th>App</th><th>When it uses the mic</th></tr></thead><tbody>${[['Teams', 'Record'], ['Zoom', 'Record'], ['Google Meet (browser)', 'Record'], ['Webex', 'Record'], ['Slack huddle', 'Record'], ['WhatsApp', 'Ask'], ['Discord', 'Ask'], ['Any other app', 'Ask']].map(([a, p]) => `<tr><td>${a}</td><td><select aria-label="Policy for ${a}">${['Record', 'Ask', 'Never'].map((o) => `<option ${o === p ? 'selected' : ''}>${o}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>
       <p>For the first week MWB asks before every recording. Audio is deleted after transcription unless you choose to keep it.</p>
     </section>
     <section class="set"><h3>Shortcuts</h3>
-      <dl class="keys"><dt><kbd>Caps Lock</kbd> ×2</dt><dd>Talk: write where the cursor is, or answer</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd></dt><dd>Hold to talk</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd></dt><dd>Rewrite the selection by voice</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd></dt><dd>Explain the open email, draft a reply</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd></dt><dd>Explain or speed up the selected code</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd></dt><dd>Start or stop recording a meeting</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>J</kbd></dt><dd>Open the Today page</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></dt><dd>Pause or resume everything</dd><dt><kbd>Alt</kbd> ×2</dt><dd>Show or hide the indicator</dd></dl>
+      <dl class="keys"><dt><kbd>Caps Lock</kbd> ×2</dt><dd>Talk: write where the cursor is, or answer</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd></dt><dd>Hold to talk (Ctrl+Shift+Alt+Space where another app owns it, as on your laptop)</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd></dt><dd>Rewrite the selection by voice</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd></dt><dd>Explain the open email, draft a reply</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd></dt><dd>Explain or speed up the selected code</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd></dt><dd>Start or stop recording a meeting</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>J</kbd></dt><dd>Open the Today page</dd><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></dt><dd>Pause or resume everything</dd><dt><kbd>Alt</kbd> ×2</dt><dd>Show or hide the indicator</dd></dl>
     </section>
   </div>`;
 }

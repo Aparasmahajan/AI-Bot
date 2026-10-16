@@ -110,9 +110,9 @@ class Connection:
         except ValueError:
             return r.status, raw
 
-    def chat(self, model, messages, max_tokens=1024, temperature=0.3, **extra):
+    def chat(self, model, messages, max_tokens=1024, temperature=0.3, on_text=None, **extra):
         """Stream one chat completion. API errors come back as ChatResult(ok=False, ...), never as exceptions,
-        so the caller can wait, retry or fall back to the local model."""
+        so the caller can wait, retry or fall back to the local model. on_text(piece) sees the words as they come."""
         body = dict(model=model, messages=messages, max_tokens=max_tokens, temperature=temperature, stream=True,
                     **extra)
         t0 = time.perf_counter()
@@ -150,6 +150,8 @@ class Connection:
                         if first is None:
                             first = took()
                         parts.append(piece)
+                        if on_text:
+                            on_text(piece)
                     finish = choice.get('finish_reason') or finish
                 usage = chunk.get('usage') or (chunk.get('x_groq') or {}).get('usage') or usage
                 timings = chunk.get('timings') or timings

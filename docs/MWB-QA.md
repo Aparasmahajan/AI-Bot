@@ -35,7 +35,16 @@ Prepared 12 October 2026.
 21. [The libraries, a window for the Groq key, and your answers](#21-the-libraries-a-window-for-the-groq-key-and-your-answers)
 22. [How to use Set API key.cmd](#22-how-to-use-set-api-keycmd)
 23. [Groq tested: results, and what you do next](#23-groq-tested-results-and-what-you-do-next)
-24. [Glossary](#24-glossary)
+24. [Is Phase 1 complete?](#24-is-phase-1-complete)
+25. [The key test: the shortcut opened Claude](#25-the-key-test-the-shortcut-opened-claude)
+26. [Alt again? Where to work normally, and reading a hold line](#26-alt-again-where-to-work-normally-and-reading-a-hold-line)
+27. [The key test passed: what now?](#27-the-key-test-passed-what-now)
+28. [Phase 1: dictation is built](#28-phase-1-dictation-is-built)
+29. [Phase 2: meetings are built](#29-phase-2-meetings-are-built)
+30. [Phase 3: understanding is built](#30-phase-3-understanding-is-built)
+31. [The code and flow changed: update the docs](#31-the-code-and-flow-changed-update-the-docs)
+32. [Results in the indicator's place, like Wispr Flow](#32-results-in-the-indicators-place-like-wispr-flow)
+33. [Glossary](#33-glossary)
 
 ---
 
@@ -1583,7 +1592,353 @@ For comparison, the local models on 12 October solved 3 (2B) and 4 (4B) of the 5
 
 ---
 
-## 24. Glossary
+## 24. Is Phase 1 complete?
+
+**Your question**
+
+> where are we ig phase 1 is complete?
+
+**My answer**
+
+No. Phase 1 hasn't started yet. We are still in **Phase 0**, the tests on your laptop. Phase 0 checks that each part of MWB can work on this laptop before we build it. Phase 1 builds the dictation app itself.
+
+**What exists in `mwb/` so far** is groundwork for Phase 3, not Phase 1:
+- the window for the Groq key;
+- saving the key in Credential Manager;
+- the Groq chat client.
+
+We built these early because the P0-4 test needed them.
+
+**Phase 0, test by test:**
+
+| Test | What it checks | Status |
+|---|---|---|
+| P0-1 | Recording both sides of a call | Technical go. The 10-minute test during a call is still to do |
+| P0-2 | Hotkeys and double Caps Lock | Script ready. Needs your 10-minute run |
+| P0-3 | Reading Outlook | Go |
+| P0-4 | Groq, and the local models kept in sync | Groq half: go. The local half needs about 3.5 GB free, then your blind review |
+| P0-5 | Spotting calls | Teams confirmed. The `--watch` run during calls is still to do |
+| P0-6 | Laptop fingerprint | Done |
+| P0-7 | Your own voice, in English, Hindi and Hinglish | To do. You read 20 sentences |
+| P0-8 | whisper small speed for Hindi and Hinglish | Go when plugged in |
+
+So 4 of the 8 tests are finished and 4 are waiting. Each of those 4 needs you: your hands, a call, or more free memory.
+
+**After the tests,** I update the design document to Rev G. That swaps its estimates for the measured numbers and adds the 13 October decisions. Then Phase 0 is finished.
+
+**Phase 1, dictation, comes next.** It takes about 8 working days and builds:
+- the core and the tray icon;
+- the hotkeys and double Caps Lock;
+- the speech worker;
+- clean-up and paste;
+- the on-screen indicator.
+
+It is done when text arrives within 1 second of finishing a phrase, the core idles at 60 MB or less, it works in 5 apps, and you can switch Wispr Flow off.
+
+**Can Phase 1 start before Phase 0 ends?** Partly. Only P0-2 (the keys) and P0-7 (your voice) decide how dictation is built. The other open tests are about meetings (Phase 2) and the local models (Phase 3). So the quickest path is:
+1. Run P0-2 now. It needs no call and takes about 10 minutes: `py -3.14 -I docs\bench\p0_2_keys.py` in the MWB folder.
+2. Read the P0-7 sentences; I'll prepare that script.
+3. Then I start Phase 1. The call tests and the local half of P0-4 can finish alongside it.
+
+**A note on Git.** On 13 October at 23:57 you committed everything to the `dev` branch on this laptop. That's fine: `dev` hasn't been pushed to GitHub. Keep it that way until the repository is private.
+
+---
+
+## 25. The key test: the shortcut opened Claude
+
+**Your question**
+
+> done that but tell me control shift space opened claude
+>
+> also haven tested this  work normally for 5 minutes (typing, Alt+Tab, capitals): anything detected then is a false start;
+
+**My answer**
+
+**Why Claude opened.** The hold-to-talk test needs four keys held together: **Ctrl + Shift + Alt + Space**. The Claude app owns Ctrl+Alt+Space, the same keys without Shift, so a press without Shift opens Claude. I sent both Ctrl+Shift+Alt+Space and Ctrl+Shift+Space from software. Both reached the test, and Claude didn't react to either. Your log has no hold at all, so a key was probably missing when you pressed it.
+
+**What the first run measured (14 Oct, 00:03–00:04):**
+
+| Key | Double taps caught | Unpaired taps |
+|---|---|---|
+| Caps Lock | 42 | 2 |
+| Alt | 54 | 3 |
+
+- Caps Lock always ended where it started.
+- None of the double taps had Ctrl, Shift, Win or Tab down.
+- An unpaired tap is a tap with no second tap within 0.35 s. Each one is either a stray tap or a double tap that was too slow.
+
+The pass mark is 99 % of the double taps you actually did. So I need your own counts, or the Results lines the first window printed when you pressed Ctrl+C.
+
+**Run 2 is open** for what's left: counting in sets of 10, 5 minutes of normal work, and the paste test.
+
+*Update (14 Oct, 00:11):* you pasted run 2's results. It lasted 1.1 minutes.
+- **The shortcut works.** Ctrl+Shift+Alt+Space reached the test and pasted. That confirms a key was missing in the first run. The paste went into the test window itself, so it still has to be tried in Outlook, Teams, VS Code and Brave.
+- **Caps Lock: 19 double taps from 38 taps.** Every tap was part of a double tap, with none left over, so nothing was missed. One tap was shorter than 15 ms and was still caught. Caps Lock stayed off throughout.
+- **Still to do:** Alt in sets of 10, the 5 minutes of normal work, and the paste test in the four apps.
+
+---
+
+## 26. Alt again? Where to work normally, and reading a hold line
+
+**Your question**
+
+> did alt already use that
+>
+> where to do noemal work
+>
+>  held 0.17 s, all keys up 942 ms later, pasted into "MWB P0-2 key test (run 2)" in 413 ms. Check that the line appeared. tek it for example
+
+**My answer**
+
+**Alt: yes, you did it in the first run.** That run caught 54 Alt double taps from 111 presses. 3 presses didn't pair up, and each of those is either a stray press or a double tap that was too slow. So between 0 and 2 double taps may have been missed, and that sits right on the 99 % line. Two counted sets of 10 settle it in about 30 seconds.
+
+**Normal work: anywhere.** The test watches the keyboard across the whole laptop, so the window can sit in the background or be minimised.
+- Use your laptop as usual: reply in Teams, write an email, code in VS Code, search in Brave.
+- Use Alt+Tab and capital letters (Shift, or a single Caps Lock press) the way you normally do.
+- The test only records key timings, never what you type.
+- If a "double tap" line appears while you weren't doing one on purpose, that's a false start.
+
+**Reading the hold line:**
+
+| Part | Meaning |
+|---|---|
+| `held 0.17 s` | How long Ctrl, Alt and Space stayed down together, measured until the first of them came up. In MWB, that's how long you're talking. Hold for 1–2 s in the test |
+| `all keys up 942 ms later` | From letting go of the first key to the last one coming up. The paste waits for all of them, or a held Ctrl, Alt or Shift would change Ctrl+V into a different shortcut. 0.9 s is a slow release; letting go of all four together takes about 0.1 s. In MWB, speech recognition will start while you let go, so this wait overlaps with it |
+| `pasted into "MWB P0-2 key test (run 2)"` | The window in front at the time. Here it was the test window itself, so click into an app's text box first |
+| `in 413 ms` | The time before your clipboard was put back. 400 ms of that is a deliberate pause so the app has time to read the clipboard. The line itself appears almost at once |
+
+**A fix in the test.** The release wait checked Ctrl, Alt and Space, but not Shift. The shortcut includes Shift, so a late Shift would have turned the paste into Ctrl+Shift+V, which opens a Markdown preview in VS Code. `p0_2_keys.py` now waits for Shift too, and a simulated late Shift release confirmed it. MWB's own hotkey code will do the same.
+
+---
+
+## 27. The key test passed: what now?
+
+**Your question**
+
+> what now  i am getting bored of this task man
+
+**My answer**
+
+Fair enough. The key test is done, and it passed:
+- Caps Lock: 50 of 50 double taps caught.
+- Alt: 50 of 50, with one pair of presses that may have been a too-slow double tap.
+- The hold-to-talk shortcut pasted into VS Code.
+
+The full numbers are in `docs/bench/P0-RESULTS-2026-10-12.md`.
+
+The two leftover parts no longer need effort from you:
+- **False starts:** one day, leave the test minimised while you work, then send me its Results.
+- **Paste into Outlook, Teams and Brave:** Phase 1's own pass test covers this.
+
+What's left before Phase 1 is one task of about 10 minutes, P0-7: reading 20 sentences into your headset. Phase 1 doesn't have to wait for it, though. English dictation was already benchmarked on 11 October, and P0-7 only confirms the accuracy for your own voice. So I can start building Phase 1, the dictation app, whenever you say. Then you'll have something you can actually use instead of more tests.
+
+---
+
+## 28. Phase 1: dictation is built
+
+**Your question**
+
+> go fot phas1 then
+
+**My answer**
+
+Done: MWB now does dictation. Double-click `Start MWB.cmd` and a microphone icon appears in the tray, next to the clock. Click in any text box, double-tap **Caps Lock** and talk. When you pause for 2 seconds, or double-tap again, the text appears where your cursor is.
+
+**What I built, in plain words:**
+- **The core** is a small program that sits in the tray. It wakes when you press a key and sleeps the rest of the time. At rest it uses 25 MB of memory.
+- **The speech worker** is a separate program that turns speech into text with Parakeet, the same engine AI-App uses. It loads only when needed and closes itself after 15 minutes without use, which gives its 1 GB back. Audio never leaves the laptop.
+- **Listening while you talk:** MWB cuts your speech at every half-second pause and sends each piece to the speech worker while you carry on. When you finish, only the last piece is left.
+- **Clean-up:** "um" and "uh" are dropped, and repeated words ("I I think") are collapsed. "New line", "bullet point" and "question mark" become layout, and "scratch that" replaces what you just said. Your dictionary fixes names.
+- **Pasting:** MWB puts the text on the clipboard, presses Ctrl+V, then puts your own clipboard back. Its text is kept out of Windows' clipboard history (Win+V).
+- **The indicator** is a small dark capsule above the taskbar: blue bars while it listens, amber dots while it works, a green tick when the text is in. Clicks go straight through it, and it never takes your cursor.
+- **History:** each dictation is saved on the laptop, so it can be searched. The tray's "Copy last dictation" gets the last one back.
+
+I installed the two libraries you approved, Pillow and pystray. Each was checked against PyPI's checksum.
+
+**How it measured (all synthetic speech; your own voice comes next):**
+
+| Pass mark (design) | Result |
+|---|---|
+| Text within 1.0 s of finishing (median) | 0.98 s, on battery with the laptop busy |
+| Word errors | 1.5 % ("sync" heard as "sink") |
+| Core memory at rest, at most 60 MB | 25 MB |
+| Caps Lock left as it was | Yes |
+| The indicator never takes focus | Yes |
+
+**Two things to know:**
+1. **The first dictation can be slow.** The speech engine takes 17–40 seconds to load when memory is tight; it took 7.5 s on 11 October with more free memory. It loads when MWB starts if 2 GB is free, and otherwise on your first dictation. After that, text comes in about a second. Switching Wispr Flow off frees 1.5 GB, which is the biggest help.
+2. **When less than 1 GB is free, MWB refuses to load the speech engine** and tells you, rather than slowing the whole laptop. That happened several times tonight (0.3–0.9 GB free).
+
+**What you do next:**
+1. Try it in Outlook, Teams, VS Code, Brave and one more app, and tell me where it went wrong.
+2. Tell me any words it keeps getting wrong, and I'll add them to your dictionary.
+3. When you're happy with it, switch Wispr Flow off.
+
+---
+
+## 29. Phase 2: meetings are built
+
+**Your question**
+
+> can we proceed with phase 2?
+
+**My answer**
+
+Yes, and it's built. One thing first: **you still need IT's or your manager's answer on recording colleagues.** Until then, MWB asks before every recording, and on work calls you should choose "Not this one".
+
+**How it works, in plain words:**
+- **Finding calls:** Windows notes which app is using the microphone. Every 5 seconds MWB looks at that note. When Teams, Zoom, Meet in a browser tab, or any other app has used the mic for 20 seconds, that's a call. When the app lets go of the mic for a minute, the call is over.
+- **Asking:** a small card appears at the bottom right: "Teams is using the microphone. Record this call?", with Record, Not this one, and Never for Teams. It never takes your cursor, so your typing in the call isn't interrupted. MWB asks every time in its first week, and always for personal apps like WhatsApp. If you don't answer within 2 minutes, it doesn't record.
+- **Recording:** two "lanes", your mic ("You") and what your speakers play ("Them"). This works the same for every call app. The tray icon and the indicator get an orange ring while it records. **Ctrl+Alt+M** starts or stops a recording by hand.
+- **Transcribing:** whisper small, which understands English, Hindi and Hinglish, on this laptop. On mains power it works during the call; on battery, right after it. Each piece of audio is deleted the moment it's transcribed.
+- **Reading it:** **Ctrl+Alt+J** opens the Today page in your browser. It lists your meetings, shows each transcript with times and You/Them, has "Copy all", and searches across all of them. Only your laptop can open it.
+- **Importing:** if Teams, Zoom or Webex already made a transcript, the tray's "Import a transcript…" reads its file (.vtt, .docx or .txt). That needs no recording and no CPU.
+
+**Two changes from the design, because of what I measured:**
+1. **whisper runs once per piece of audio and then exits,** instead of staying loaded. Staying loaded held 2.2 GB; running per piece uses 0.79 GB and gives it back each time.
+2. **The pieces are about 25 seconds, not 10.** whisper always processes a 30-second window, so a 4-second piece costs as much as a 28-second one.
+
+**How it tested** (a made-up 1-minute conversation, 12 turns, played through MWB):
+
+| Check | Result |
+|---|---|
+| Transcript correct, You and Them in order | Yes, all 12 lines |
+| Audio left on disk | None |
+| Ready within 2 minutes of the end | **No: 355 s.** Only 0.4–0.8 GB was free, below the 0.8 GB whisper needs, so nothing ran during the call |
+
+With enough free memory, each 28-second piece took about 28 seconds, so a transcript about a minute after the call is likely. That's an estimate. **Memory is the real limit on this laptop:** switching Wispr Flow off frees 1.5 GB, and a second memory stick would fix it properly.
+
+**What you do:**
+1. Start MWB (`Start MWB.cmd`) and leave it running through your calls for a week. Tell me about any call it missed.
+2. Ask IT or your manager about recording colleagues.
+3. Try importing a Teams transcript: in Teams, open the meeting's Recap, download the transcript, then use the tray's "Import a transcript…".
+
+---
+
+## 30. Phase 3: understanding is built
+
+**Your question**
+
+> go for next phase
+
+**My answer**
+
+Phase 3 is built. MWB now uses the language model (Groq, with the Qwen model on your laptop as a fallback) to understand what it hears and what you select.
+
+**What's new, in plain words:**
+- **Meeting notes:** after a meeting's transcript is ready, MWB writes a short summary, the decisions, and the action items with who owns them and by when. The model only copies down what was said ("by Wednesday"). MWB's own code works out the real date (Wed 14 Oct), because in P0-4 the models got dates wrong.
+- **Work or Timepass:** each meeting gets a label with its reasons. Clear cases are decided by simple rules ("Sprint planning" is work, "Diwali celebration" is timepass). Unclear ones are checked against the notes. On the Today page one click confirms or flips the label, and your choice carries over to the same meeting next week.
+- **Email (Ctrl+Alt+E):** select an email's text and press the keys. A card explains what they want, the deadlines as real dates, the people, and reply ideas. **Hold** the keys and say the gist ("tell him I'll share the build by Wednesday") to get a draft you can copy, insert, or open as a classic-Outlook draft. **MWB never sends email**; a test checks every line of its code for that.
+- **Code (Ctrl+Alt+K):** select code and press. You get what it does, its problems, and a better version, with Replace and a side-by-side diff in VS Code. Hold and describe code ("a Java method that retries with backoff") to have it written at the cursor.
+- **Rewrite (Ctrl+Alt+R):** select text, hold, and say "shorter", "more formal" or "translate to Hindi".
+- **Asking questions:** the same Caps Lock double tap now *answers* instead of writing when your cursor isn't in a text box, or when you start with "MWB, …". Questions about your day ("What are my open action items?", "What did they say about Kafka?", "What's my next meeting?") are answered from your own meetings, notes and Outlook calendar. Each fact carries a tag like [M3 10:04] showing where it came from, and any tag the model makes up is removed.
+- **The local fallback:** if the network, the key or Groq fails, the same request goes to Qwen on your laptop, if there's enough free memory. Background notes wait for mains power and a calm CPU rather than slowing your laptop.
+
+**How it tested:**
+
+| Pass mark (design) | Result |
+|---|---|
+| 10 questions about your day answered correctly | **10 of 10**, in 0.6–1.7 s each |
+| Notes quickly after a call | 3 seconds for a 15-minute test meeting |
+| No code path that sends email | Passed |
+| 80 % of labels match yours | Needs your first 20 meetings |
+| Everything still works with the network off | Built, but not yet tried for real: the local model needs 1.25 GB free and only 0.2–0.8 GB was free tonight |
+
+**Things I found and fixed:**
+- Your terminal and VS Code don't tell Windows they're text boxes, so a double tap there would have become a question. They now always write.
+- A first version of the cards took the focus from your app, which would break "Replace". They now never take it, and I checked.
+
+**What you do:**
+1. Try Ctrl+Alt+E on an email in Outlook on the web, Ctrl+Alt+K on some code, and ask MWB a question with the cursor on the desktop.
+2. After meetings, confirm or flip each label on the Today page for your first 20. That's how MWB proves its 80 %.
+3. One evening when the laptop is quieter, tell me, and I'll run the network-off test and P0-4's local half together.
+
+---
+
+## 31. The code and flow changed: update the docs
+
+**Your question**
+
+> made some changes in code and flow update docs
+
+**My answer**
+
+Done. First I checked what had changed. No file in the MWB folder was edited after 14 October, 23:50. So the changes are the ones made while building Phases 1 to 3 on 14 October. README, TODO and CLAUDE.md already described them. The design document didn't: it was still Rev F from 12 October, written before any app code existed. If you changed something somewhere else, tell me where and I'll add it.
+
+**What I updated:**
+
+| Document | What changed |
+|---|---|
+| Design document, now **Rev G** | It describes MWB as built. I checked each point against the code, not only against the notes. It also has the measured numbers from Phase 0 and the build, in a new §6.5, and the 13 October decisions. Things not built yet (the journal, the setup screen, effort levels, the other seven skins) are marked as such. Republished to the same link |
+| The interactive demo | Small fixes so it matches the app. Meetings now go through whisper. The clipboard is put back after 400 ms. The API timeout is 20 s. The "Record this call?" card has its real buttons, and the push-to-talk fallback is shown. Republished to the same link |
+| README.md, TODO.md | Status 16 October; the "Rev G" item in Phase 0 is ticked |
+
+**The biggest differences between the plan and what was built:**
+
+| The plan (Rev F) | As built (Rev G) | Why |
+|---|---|---|
+| Meetings through Parakeet, or a whisper server that stays loaded | whisper small through whisper-cli, started once for each piece of audio | Your meetings use Hindi and Hinglish, and Parakeet is English only. The server held 2.2 GB; one whisper-cli run peaks at 0.79 GB and gives it back |
+| Pieces of 10 s | Pieces of 22–28 s | whisper always works on a 30-second window, so short pieces cost the same as long ones |
+| Transcribe during every call | During the call only on mains power with a calm CPU; on battery, after the call | Measured in P0-8: too slow on battery |
+| Push-to-talk on Ctrl+Alt+Space | Ctrl+Shift+Alt+Space on this laptop | Another app, probably Claude's quick entry, owns Ctrl+Alt+Space |
+| Clipboard back after 300 ms | 400 ms | P0-2 pasted reliably with 400 ms |
+| API timeout of 10 s | 20 s without a word | The value set in the settings (`api_timeout_s`); you can change it there |
+| The answer card grows out of the indicator | Every card opens near the mouse pointer, and never takes the focus | So Replace and Insert land in your app |
+| `vc_apps.yaml`, Opus audio | `vc_apps.toml`, temporary WAV | Python reads TOML without an extra library; each WAV piece is deleted as soon as it is transcribed, so compressing it isn't worth a library |
+| Unknown call apps ask once, then MWB remembers | They ask every time, until you choose "Never" | That's how the card was built |
+
+Six figures were redrawn to match: the block diagram, one round of use, the dictation timeline, the meeting pipeline, the database tables and the plan.
+
+**Nothing new for you to do.** The open items in TODO.md are the same as before: try dictation in your five apps, the call tests, your voice test, and the question to IT about recording colleagues.
+
+---
+
+## 32. Results in the indicator's place, like Wispr Flow
+
+**Your question**
+
+> inspite of opening a diff modal for cut and insert optn like wispr does open in audio place only
+>
+> also make sure to make it fast and smooth such that it doesnot affect resources of laptop and make it authentic and cool like whispr flow does
+
+**My answer**
+
+Done. Answers, reply drafts, code explanations and rewrites no longer open a separate window near the mouse. They open **in the indicator's place**: a dark panel rises out of the pill at the bottom of the screen, the text streams into it, and the buttons (Copy, Insert, Replace, Open diff in VS Code, Open as Outlook draft) sit at the bottom of the panel. Wispr Flow keeps everything in its bar in the same way. This is also what the original plan said ("the answer card grows out of the indicator"); the first build had put cards near the mouse instead.
+
+**How it behaves:**
+
+| You do | What happens |
+|---|---|
+| Ask, rewrite, explain | The pill shows three amber dots; the panel fades and rises in above it, and the text streams in |
+| Click **Copy**, **Insert** or **Replace** | The panel closes and the pill shows a green tick with "Copied", "Inserted" or "Replaced" for about a second |
+| Click **Open diff…** or **Open as Outlook draft** | That opens, and the panel stays, so you can still Replace afterwards |
+| Scroll the mouse wheel over a long answer | It scrolls; a soft fade shows there is more above or below |
+| Press **Esc**, or click **×** | The panel closes |
+
+Clicking the panel never takes the keyboard focus, so Insert and Replace still paste into the app you were typing in. When no panel is open, clicks go straight through the pill as before.
+
+**Smoother:** the pill now grows and shrinks between its sizes (resting, listening, the tick) instead of jumping, and the voice bars rise quickly and fall gently, so they follow your voice without flickering.
+
+**Light on the laptop** (measured on this laptop):
+
+| | Before | Now |
+|---|---|---|
+| Resting, nothing happening | No redraws | No redraws |
+| One frame while you talk | A new drawing surface made and freed every frame | The surface is kept and reused; drawing takes about 0.3 ms at 30 frames a second |
+| Size changes and fades | Not animated | 60 frames a second, only for the 0.2 s they last |
+| A long answer streaming in | The Tk window redrew every piece | At most 12 redraws a second, about 4 ms each; each line of text is drawn once and reused |
+
+The old Tk result window is gone from `mwb/ui/cards.py`; the "Record this call?" card is unchanged, because it isn't a result.
+
+**Changed files:** `mwb/ui/indicator.py` (the panel, the mouse, the animation), `mwb/ui/art.py` (drawing the panel, the "Copied" tick, the in-between sizes), `mwb/ui/cards.py` and `mwb/app.py` (results go to the indicator).
+
+**Not done yet:** the design document and the demo still describe cards near the mouse, so they need a small update.
+
+*Update (16 Oct 2026):* the design document and the demo now match. In the design document, §13.3 describes the panel and has a new Figure 13.4 (working, the panel rising out of the pill, the "Inserted" tick), and §8.3, §9 and the Rev G row no longer say "near the mouse". In the demo, the result opens as a dark panel just above the pill; Copy and Replace close it and the pill shows "Copied" or "Replaced", while "Open as Outlook draft" and "Open diff in VS Code" keep it open. Both files are rebuilt here; the two online copies still need republishing.
+
+---
+
+## 33. Glossary
 
 | Term | Meaning |
 |---|---|
@@ -1621,3 +1976,15 @@ For comparison, the local models on 12 October solved 3 (2B) and 4 (4B) of the 5
 | First word | The time from sending a request to the first word of the answer arriving: what makes an assistant feel quick |
 | Blind review | Scoring answers without knowing which model wrote them, so you judge only the answer |
 | Rate limit | How many requests or tokens an API allows per minute or per day; above it, the API asks you to wait |
+| Push-to-talk | Talking only while you hold a key, like a walkie-talkie; letting go means "done" |
+| VAD (voice activity detection) | Code that tells speech from silence. MWB uses it to cut your speech at pauses |
+| Speech worker | The separate program that turns audio into text. It closes when idle, which is how its memory goes back to Windows |
+| Tray | The small icons next to the clock at the bottom right of the screen |
+| Finish-to-text | The time from finishing a dictation to the text appearing in your app: Phase 1's main speed number |
+| Loopback | Recording what the laptop itself plays, the way MWB hears the other side of a call |
+| Lane | One of the two recordings of a call: You (the mic) or Them (the speakers) |
+| Echo | Your mic hearing the other side through your speakers; MWB removes those repeated lines |
+| Router | The part of MWB that decides where a request goes: the API first, the local model when the API can't answer |
+| Fallback | The second choice used when the first fails: here, Qwen on your laptop when Groq can't be reached |
+| Citation | A tag such as [M3 10:04] showing which meeting, time or item a fact came from |
+| Action item | A task someone agreed to in a meeting, with an owner and, if one was said, a date |

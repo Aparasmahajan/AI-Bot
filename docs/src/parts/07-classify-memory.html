@@ -27,9 +27,10 @@
 <tr><th scope="row">After the call</th><td>several action items, you spoke a fair share</td><td>no action items, little work vocabulary</td><td>low</td></tr>
 </tbody></table></div>
 <p>The weighted signals give a score from −1 (Timepass) to +1 (Work). When the absolute score is 0.6 or more the label is final, and the reason lists the signals that decided it. Otherwise the meeting goes to stage B after the call.</p>
+<p class="small"><b>As built (Rev G).</b> Stage A uses the title words (+0.6 for work words, −0.6 for timepass words, with Indian festivals and "chai" among them), the app (−0.3 for a personal app, +0.15 for a work tool), the action items (+0.2 for two or more, −0.1 for none), and your series history, which decides on its own. The organizer, attendees and Outlook categories come with the journal's collectors in Phase 4.</p>
 
 <h3><span class="n">10.2</span>Stage B · transcript check</h3>
-<p>The model sees the title, attendee count, duration and the per-chunk notes from §9.3, never the raw audio. It has to answer in JSON, with quotes and timestamps as evidence. Each 10-minute chunk is tagged separately, so mixed meetings get split minutes.</p>
+<p>The model sees the title, the app, the duration, the number of voice lanes and the per-chunk notes and quotes from §9.3, never the raw audio. It has to answer in JSON, with quotes and timestamps as evidence. MWB keeps only evidence quotes that really appear in the notes. Each 10-minute chunk is described separately, so mixed meetings get split minutes. If the check can't run, the stage A label stands, and the reasons say so.</p>
 <div class="cols">
 <div>
 <div class="code-h">Prompt contract</div>
@@ -59,8 +60,8 @@ USER    title: "Sprint 42 planning"
 </div>
 
 <h3><span class="n">10.3</span>Stage C · your correction</h3>
-<p>In the Today page, one click flips a label. MWB stores the correction, applies it to the whole meeting series, and adds the five most similar past corrections to the stage B prompt as examples. After about 50 labelled meetings, an optional small classifier (logistic regression on the stage A signals plus a sentence embedding of the title) can replace the hand-set weights. It trains in seconds on the CPU.</p>
-<p><b>How accuracy is proven:</b> in week 1 you confirm or flip each label as it appears, and MWB records agreement. The target is 80 % on the first 20 meetings and 85 % after two weeks.</p>
+<p>In the Today page, one click confirms or flips a label. MWB stores the correction, applies it to the whole meeting series (the same title without dates and numbers), and adds your five most recent corrections to the stage B prompt as examples. After about 50 labelled meetings, an optional small classifier (logistic regression on the stage A signals plus a sentence embedding of the title) can replace the hand-set weights. It trains in seconds on the CPU.</p>
+<p><b>How accuracy is proven:</b> in week 1 you confirm or flip each label as it appears, and MWB records agreement; the Today page shows the count. The target is 80 % on the first 20 meetings and 85 % after two weeks.</p>
 </section>
 
 <section id="s11" class="sec">
@@ -75,11 +76,11 @@ USER    title: "Sprint 42 planning"
 
 <h3><span class="n">11.2</span>Memory guard</h3>
 <ul>
-  <li>Before loading a model, the core checks free physical memory with <code>GlobalMemoryStatusEx</code>. It needs the model size plus a 1 GB margin.</li>
+  <li>Before loading a model, the core checks free physical memory with <code>GlobalMemoryStatusEx</code>. It wants the model size plus a 1 GB margin. Between the model size and that line, an interactive model still loads, with a warning in the log; below the model size it refuses and says how much is free. As built: speech refuses below 1.0 GB and loads at MWB's start only with 2 GB free; meeting pieces wait below 0.8 GB; the local model needs 1.25 GB (2B) or 2.42 GB (4B), and stops the idle speech worker first to make room.</li>
   <li>If memory is short, it tries in order: stop idle workers, pick the next smaller model in the profile, then defer batch work until memory frees up. Language work rarely needs this, because it goes to the API unless the API can't be reached.</li>
   <li>One model loads at a time. Two may stay resident together only when there is room for both.</li>
   <li>Idle timers: the speech worker exits 15 minutes after the last dictation, or when its meeting job ends. The language worker exits 5 minutes after its last job on Lean, 30 minutes on Balanced.</li>
-  <li>When free memory stays under 1 GB for 30 s, idle workers exit at once.</li>
+  <li>When free memory stays under 1 GB for 30 s, idle workers exit at once. The core checks every 10 s.</li>
 </ul>
 
 <h3><span class="n">11.3</span>A modelled workday</h3>
@@ -94,9 +95,10 @@ USER    title: "Sprint 42 planning"
 <thead><tr><th>Work</th><th class="num">Threads</th><th>Priority</th><th>Arena</th><th>Why</th></tr></thead>
 <tbody>
 <tr><th scope="row">Dictation speech</th><td class="num">4</td><td>normal</td><td>on</td><td>You are waiting. Measured 0.91 s for a 5-second phrase.</td></tr>
-<tr><th scope="row">Meeting speech</th><td class="num">2</td><td>below normal</td><td>off</td><td>Leaves the CPU to the call app and keeps memory flat at 0.99 GB.</td></tr>
-<tr><th scope="row">Local LLM, interactive</th><td class="num">4</td><td>normal</td><td>mmap</td><td>Fallback only. Rewrite, email and code cards stream as they are written.</td></tr>
-<tr><th scope="row">Local LLM, batch</th><td class="num">3</td><td>below normal</td><td>mmap</td><td>Fallback only. Notes and journal run in the background.</td></tr>
+<tr><th scope="row">Meeting speech, during the call</th><td class="num">2</td><td>below normal</td><td>—</td><td>whisper-cli, once per piece, and only on mains power. Leaves the CPU to the call app; each run peaks at 0.79 GB and gives it back.</td></tr>
+<tr><th scope="row">Meeting speech, after the call</th><td class="num">4</td><td>below normal</td><td>—</td><td>To have the transcript about a minute after the end, or as soon as memory allows.</td></tr>
+<tr><th scope="row">Local LLM, interactive</th><td class="num">4</td><td>normal</td><td>mmap</td><td>Fallback only. Rewrite, email and code results stream into the panel as they are written.</td></tr>
+<tr><th scope="row">Local LLM, batch</th><td class="num">4</td><td>normal</td><td>mmap</td><td>Fallback only, on mains power with a calm CPU. As built, one llama-server serves both kinds of work with 4 threads; a separate batch setting comes with the effort levels in Phase 5.</td></tr>
 </tbody></table></div>
 
 <h3><span class="n">11.5</span>Disk</h3>
@@ -104,13 +106,13 @@ USER    title: "Sprint 42 planning"
 <thead><tr><th>Item</th><th class="num">Size</th><th>Notes</th></tr></thead>
 <tbody>
 <tr><th scope="row">Parakeet 0.6B v2 int8</th><td class="num">631 MB</td><td>Already in the Hugging Face cache</td></tr>
-<tr><th scope="row">whisper.cpp with base.en</th><td class="num">~210 MB</td><td>Already in AI-App\addon</td></tr>
-<tr><th scope="row">whisper small, multilingual</th><td class="num">487 MB</td><td>In %LOCALAPPDATA%\MWB\models, copied from a verified file already on the laptop</td></tr>
+<tr><th scope="row">whisper.cpp with base.en</th><td class="num">~210 MB</td><td>Already in AI-App\addon; MWB uses its <code>whisper-cli.exe</code></td></tr>
+<tr><th scope="row">whisper small, multilingual</th><td class="num">487 MB</td><td>In %LOCALAPPDATA%\MWB\models, copied from a verified file already on the laptop; transcribes every meeting</td></tr>
 <tr><th scope="row">whisper large-v3-turbo</th><td class="num">574 MB</td><td>Same folder; downloaded 12 Oct, for a stronger laptop or overnight re-runs</td></tr>
 <tr><th scope="row">Local fallback, Qwen3.5 2B</th><td class="num">1.27 GB</td><td>In Tools\llamacpp\models; memory-mapped GGUF</td></tr>
 <tr><th scope="row">Qwen3.5 4B and its vision file</th><td class="num">3.38 GB</td><td>Same folder: the code and journal fallback, and image chat in your gui.bat</td></tr>
 <tr><th scope="row">Python environments</th><td class="num">~0.6 GB</td><td>Core and workers</td></tr>
-<tr><th scope="row">Meeting audio</th><td class="num">~22 MB / h</td><td>Deleted after transcription unless you keep it</td></tr>
+<tr><th scope="row">Meeting audio</th><td class="num">~350 MB / h of speech</td><td>Temporary WAV pieces in %LOCALAPPDATA%\MWB\audio, deleted as each is transcribed, unless you keep them (estimate)</td></tr>
 <tr><th scope="row">Database</th><td class="num">~10 MB / month</td><td>After pruning activity samples older than 30 days</td></tr>
 </tbody></table></div>
 </section>

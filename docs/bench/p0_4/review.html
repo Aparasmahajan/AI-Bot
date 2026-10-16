@@ -40,7 +40,7 @@ pre.prompt{background:var(--wash);border-radius:8px;padding:12px;margin-top:8px;
 </style></head>
 <body><main>
 <h1>Blind review: API against the local model</h1>
-<p class="lede">Each task was given to Groq and to the local Qwen3.5 models with the same prompt. The answers are shuffled and labelled A to D. Score each one from 1 (unusable) to 5 (I'd use it as is). When you're done, press <b>Reveal</b> to see who wrote what, then <b>Copy my scores</b> and paste them to Claude. Made 13 October 2026; every prompt is invented.</p>
+<p class="lede">Each task was given to Groq and to the local Qwen3.5 models with the same prompt. The answers are shuffled and labelled A to D. Score each one from 1 (unusable) to 5 (I'd use it as is). When you're done, press <b>Reveal</b> to see who wrote what, then <b>Copy my scores</b> and paste them to Claude. Made 16 October 2026; every prompt is invented.</p>
 <div class="bar"><button class="primary" id="copy">Copy my scores</button><button id="reveal">Reveal who wrote what</button><span class="progress" id="progress"></span></div>
 <section class="task" data-task="meeting_en">
   <h2><span class="n">1</span>Meeting notes, English call</h2>
@@ -68,44 +68,44 @@ Arjun: Fine by me.
 Me: Agreed.
 Priya: Okay. The release candidate is still planned for Thursday. Next sync is Friday at 11. Thanks, everyone.</pre></details>
   <div class="answers"><article class="ans" data-key="meeting_en:A">
-  <header><span class="letter">A</span><span class="who">groq-20b · 0.1 s to first word, 0.3 s in all · checks 5/6</span></header>
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.7 s in all · checks 5/6</span></header>
   <pre>## Summary
 - Arjun will merge the login timeout fix (PAY‑412) by Wednesday.
 - Me will review the PR and share the UAT build with Sanjay’s team by Wednesday.
-- Meera is blocked on Kafka access; Priya will escalate with DevOps.
-- Dark mode is postponed to the next sprint; release candidate remains on Thursday.
+- Meera’s Kafka consumer work is blocked due to lack of staging cluster access; Priya will raise the issue with DevOps.
+- Dark mode feature is postponed to the next sprint; release candidate remains scheduled for Thursday.
 
 ## Decisions
 - Dark mode will be moved to the next sprint.
+- Release candidate remains planned for Thursday.
 
 ## Action items
-- [Arjun] Raise PR for login timeout bug (due: today)
-- [Me] Review Arjun’s PR (no date)
-- [Me] Share UAT build with Sanjay’s team (due: Wednesday)
-- [Priya] Escalate Kafka access ticket to DevOps (due: today)
-- [Meera] Begin Kafka consumer work once access granted (no date)</pre>
+- [Arjun] Merge login timeout PR (due: Wednesday)
+- [Me] Review Arjun’s PR and share UAT build with Sanjay’s team (due: Wednesday)
+- [Priya] Escalate Kafka access issue with DevOps (no date)
+- [Meera] Begin Kafka consumer work once access is granted (no date)</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="meeting_en:B">
-  <header><span class="letter">B</span><span class="who">groq-120b · 0.6 s to first word, 1.2 s in all · checks 6/6</span></header>
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.5 s to first word, 1.1 s in all · checks 6/6</span></header>
   <pre>## Summary
-- Arjun identified the login timeout bug (PAY‑412) and has a local fix ready.
+- Arjun identified the login timeout bug (PAY‑412) and has a fix ready locally.
 - Me will review Arjun’s PR and is preparing the UAT build to share with Sanjay’s team by Wednesday.
-- Meera is blocked on Kafka consumer work due to missing access to the staging Kafka cluster.
+- Meera is blocked on Kafka consumer work due to lack of access to the staging Kafka cluster.
 - Dark mode work is postponed to the next sprint.
 
 ## Decisions
 - The login timeout fix PR will be raised today and merged by Wednesday.  
 - Dark mode will be moved to the next sprint.  
 - Release candidate remains scheduled for Thursday.  
-- Next sync meeting set for Friday at 11:00 am.
+- Next sync meeting set for Friday at 11:00.
 
 ## Action items
 - **Arjun** raise the PR for the login timeout fix (due: today).  
 - **Arjun** ensure the PR is merged by Wednesday (due: Wednesday).  
-- **Me** review Arjun’s PR as soon as it’s up (no date).  
+- **Me** review Arjun’s PR as soon as it’s up (due: no date).  
 - **Me** share the UAT build with Sanjay’s team (due: Wednesday).  
 - **Priya** escalate Meera’s Kafka access request with DevOps (due: today).  
-- **Meera** start Kafka consumer work once access is granted (estimated 2 days, no exact due date).  </pre>
+- **Meera** start Kafka consumer work once access is granted (due: within two days of access).  </pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article></div>
 </section>
@@ -133,10 +133,10 @@ Rohit: और हाँ, logging library का upgrade अभी नहीं �
 Me: Agreed.
 Rohit: Okay, next sync Wednesday को चार बजे। Thanks.</pre></details>
   <div class="answers"><article class="ans" data-key="meeting_hinglish:A">
-  <header><span class="letter">A</span><span class="who">groq-20b · 0.4 s to first word, 0.7 s in all · checks 7/7</span></header>
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.4 s to first word, 0.6 s in all · checks 7/7</span></header>
   <pre>## Summary
 - Staging deployment scheduled for Friday; database migration script review due tomorrow.
-- Payment gateway timeout issue identified; retry logic causing new token creation; Neha will fix by Thursday.
+- Payment gateway timeout issue identified; retry logic is causing new token creation on each retry.
 - QA team needs new test cases; Neha will send them by tonight.
 - Logging library upgrade postponed until after the client demo on Monday.
 
@@ -144,33 +144,35 @@ Rohit: Okay, next sync Wednesday को चार बजे। Thanks.</pre></de
 - Staging deployment will occur on Friday.
 - Payment gateway retry logic will be fixed by Thursday.
 - New QA test cases will be delivered by tonight.
-- Logging library upgrade will be deferred until after the Monday demo.
+- Logging library upgrade will be deferred until after the client demo.
 
 ## Action items
 - [Me] Review database migration script (due: tomorrow)
 - [Neha] Fix payment gateway retry logic (due: Thursday)
 - [Neha] Send new QA test cases (due: tonight)
-- [Rohit] Schedule next sync on Wednesday at 4 pm (no date)</pre>
+- [Rohit] Prepare for client demo on Monday (no date)</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="meeting_hinglish:B">
-  <header><span class="letter">B</span><span class="who">groq-120b · 0.5 s to first word, 1.0 s in all · checks 7/7</span></header>
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.5 s to first word, 1.2 s in all · checks 7/7</span></header>
   <pre>## Summary
 - Discussed staging deployment schedule and payment gateway timeout issue.  
 - Agreed on fixing the payment gateway retry logic by Thursday.  
-- Planned staging deployment for Friday, with a database migration script review to be completed by tomorrow.  
-- Set next sync for Wednesday at 4 PM and noted that the logging library upgrade will be postponed until after the client demo on Monday.  
+- Planned staging deployment for Friday, with a database migration script review due tomorrow.  
+- Confirmed client demo on Monday and set next sync for Wednesday at 4 pm.
 
 ## Decisions
 - Payment gateway retry logic will be fixed by Thursday.  
-- Staging deployment will occur on Friday; the deadline must not be missed for the Monday client demo.  
-- Logging library upgrade will be deferred until after the demo.  
+- Staging deployment will occur on Friday; the deadline must not be missed.  
+- Logging library upgrade will be postponed until after the demo.  
+- Next sync meeting scheduled for Wednesday at 4 pm.
 
 ## Action items
-- **Neha** will fix the payment gateway retry logic (due: Thursday).  
-- **Neha** will send new QA test cases to the QA team (due: today evening).  
-- **Me** will review the database migration script (due: tomorrow).  
-- **Me** will perform the staging deployment (due: Friday).  
-- **Rohit** will lead the next sync meeting (due: Wednesday at 4 PM).</pre>
+- **Neha** fix payment gateway retry logic (due: Thursday).  
+- **Me** review database migration script (due: tomorrow).  
+- **Me** ensure staging deployment is completed on Friday.  
+- **Neha** send new QA test cases to the QA team (due: today evening).  
+- **Rohit** coordinate client demo on Monday (no date).  
+- **Rohit** schedule next sync meeting for Wednesday 4 pm (no date).</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article></div>
 </section>
@@ -182,18 +184,18 @@ Rohit: Okay, next sync Wednesday को चार बजे। Thanks.</pre></de
 Call: app Microsoft Teams; calendar entry &quot;Sprint 43 planning&quot; (organiser Priya, 7 invitees); Tue 13 Oct 2026, 11:00-11:45; 6 people spoke.
 First minute of the transcript: &quot;Okay, let&#x27;s go through the backlog. We have 34 story points of carry-over from last sprint. The rate limiter for the public API is the top item, then the invoice export bug...&quot; </pre></details>
   <div class="answers"><article class="ans" data-key="label_work:A">
-  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 1/1</span></header>
-  <pre>{&quot;label&quot;:&quot;work&quot;,&quot;confidence&quot;:0.95,&quot;reasons&quot;:[&quot;Sprint planning meeting&quot;,&quot;Team discussing backlog and story points&quot;,&quot;Work-related agenda&quot;]}</pre>
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.5 s in all · checks 1/1</span></header>
+  <pre>{&quot;label&quot;:&quot;work&quot;,&quot;confidence&quot;:0.99,&quot;reasons&quot;:[&quot;Sprint planning meeting&quot;,&quot;Team discussion on backlog&quot;,&quot;Work-related agenda&quot;]}</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="label_work:B">
-  <header><span class="letter">B</span><span class="who">groq-120b · 0.5 s to first word, 0.7 s in all · checks 1/1</span></header>
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.4 s to first word, 0.5 s in all · checks 1/1</span></header>
   <pre>{
   &quot;label&quot;: &quot;work&quot;,
-  &quot;confidence&quot;: 0.97,
+  &quot;confidence&quot;: 0.98,
   &quot;reasons&quot;: [
-    &quot;Meeting is a sprint planning session&quot;,
-    &quot;Discussion of backlog and technical tasks&quot;,
-    &quot;Involves multiple team members&quot;
+    &quot;Sprint planning meeting for software development&quot;,
+    &quot;Discussion of backlog, story points, and technical tasks&quot;,
+    &quot;Organised by a team member with multiple invitees&quot;
   ]
 }</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
@@ -207,20 +209,20 @@ First minute of the transcript: &quot;Okay, let&#x27;s go through the backlog. W
 Call: app WhatsApp; no calendar entry; Tue 13 Oct 2026, 13:10-13:35; 3 people spoke.
 First minute of the transcript: &quot;bhai kal ka match dekha? last over mein kya six maara yaar... haan haan, aur weekend pe movie ka plan hai kya? Saturday ko chalte hain na...&quot; </pre></details>
   <div class="answers"><article class="ans" data-key="label_timepass:A">
-  <header><span class="letter">A</span><span class="who">groq-120b · 0.6 s to first word, 0.7 s in all · checks 1/1</span></header>
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.5 s to first word, 0.9 s in all · checks 1/1</span></header>
   <pre>{
   &quot;label&quot;: &quot;timepass&quot;,
-  &quot;confidence&quot;: 0.95,
+  &quot;confidence&quot;: 0.9,
   &quot;reasons&quot;: [
     &quot;Conversation is about personal topics (cricket match, movie plans)&quot;,
-    &quot;No work-related calendar entry is present&quot;,
-    &quot;Participants discuss leisure activities&quot;
+    &quot;No calendar entry indicating work-related meeting&quot;,
+    &quot;Occurs on WhatsApp, a typical personal chat platform&quot;
   ]
 }</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="label_timepass:B">
-  <header><span class="letter">B</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 1/1</span></header>
-  <pre>{&quot;label&quot;:&quot;timepass&quot;,&quot;confidence&quot;:0.95,&quot;reasons&quot;:[&quot;casual conversation about sports and movies&quot;,&quot;no work-related topics mentioned&quot;,&quot;participants discussing personal plans&quot;]}</pre>
+  <header><span class="letter">B</span><span class="who">groq-20b · 0.5 s to first word, 0.5 s in all · checks 1/1</span></header>
+  <pre>{&quot;label&quot;:&quot;timepass&quot;,&quot;confidence&quot;:0.95,&quot;reasons&quot;:[&quot;Casual conversation about sports and movie plans&quot;,&quot;No work-related topics mentioned&quot;,&quot;Participants discuss personal leisure activities&quot;]}</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article></div>
 </section>
@@ -239,12 +241,12 @@ Thanks,
 Vikram</pre></details>
   <div class="answers"><article class="ans" data-key="email_explain:A">
   <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 3/4</span></header>
-  <pre>{&quot;summary&quot;:&quot;Send API docs and load test report by Friday&quot;,&quot;they_want&quot;:[&quot;API documentation&quot;,&quot;latest load test report&quot;,&quot;confirmation of rate limit scope (per user or per tenant)&quot;],&quot;deadlines&quot;:[{&quot;what&quot;:&quot;API docs &amp; load test report&quot;,&quot;date&quot;:&quot;2026-10-14&quot;}],&quot;people&quot;:[&quot;Vikram Rao&quot;,&quot;Priya&quot;],&quot;reply_options&quot;:[&quot;Send the requested documents and confirmation now&quot;,&quot;Request a brief extension if needed&quot;]}</pre>
+  <pre>{&quot;summary&quot;:&quot;Send API docs and load test report by Friday. Confirm rate‑limit scope.&quot;,&quot;they_want&quot;:[&quot;API documentation&quot;,&quot;latest load test report&quot;,&quot;clarification on whether rate limit is per user or per tenant&quot;],&quot;deadlines&quot;:[{&quot;what&quot;:&quot;load test report (draft acceptable)&quot;,&quot;date&quot;:&quot;2026-10-14&quot;}],&quot;people&quot;:[&quot;Vikram Rao&quot;,&quot;Priya&quot;],&quot;reply_options&quot;:[&quot;Send the requested documents and confirm the rate‑limit scope&quot;,&quot;Ask for clarification on any missing details&quot;]}</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="email_explain:B">
-  <header><span class="letter">B</span><span class="who">groq-120b · 0.7 s to first word, 1.0 s in all · checks 4/4</span></header>
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.6 s to first word, 0.9 s in all · checks 3/4</span></header>
   <pre>{
-  &quot;summary&quot;: &quot;Vikram requests API docs, a load test report draft, and rate‑limit clarification before the review.&quot;,
+  &quot;summary&quot;: &quot;Vikram requests API docs, load test report, and rate‑limit clarification before next Tuesday&#x27;s review.&quot;,
   &quot;they_want&quot;: [
     &quot;API documentation&quot;,
     &quot;latest load test report (draft acceptable)&quot;,
@@ -252,17 +254,18 @@ Vikram</pre></details>
   ],
   &quot;deadlines&quot;: [
     {
-      &quot;what&quot;: &quot;Provide the requested documents and clarification&quot;,
-      &quot;date&quot;: &quot;2026-10-16&quot;
+      &quot;what&quot;: &quot;Provide draft or final load test report&quot;,
+      &quot;date&quot;: &quot;2026-10-15&quot;
     }
   ],
   &quot;people&quot;: [
-    &quot;Vikram Rao (client PM)&quot;,
-    &quot;Priya (cc)&quot;
+    &quot;Vikram Rao&quot;,
+    &quot;Priya&quot;,
+    &quot;Me&quot;
   ],
   &quot;reply_options&quot;: [
-    &quot;Send the API docs and draft load test report now, and confirm the rate‑limit scope.&quot;,
-    &quot;Ask if any specific version of the docs or additional details are needed before sending.&quot;
+    &quot;Send the API docs and a draft load test report by Friday, and confirm the rate‑limit scope.&quot;,
+    &quot;Ask if a specific format or additional details are needed for the docs or report before sending.&quot;
   ]
 }</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
@@ -279,7 +282,7 @@ When can we expect the UAT build? And is the Kafka integration done on your side
 Regards,
 Sanjay</pre></details>
   <div class="answers"><article class="ans" data-key="email_draft:A">
-  <header><span class="letter">A</span><span class="who">groq-120b · 0.5 s to first word, 0.5 s in all · checks 6/6</span></header>
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.3 s to first word, 0.4 s in all · checks 6/6</span></header>
   <pre>Hi Sanjay,
 
 I’ll share the UAT build by Wednesday. I’m still waiting for Kafka access from DevOps; without it the integration is blocked.
@@ -319,20 +322,20 @@ def average(nums):
     return total / len(nums)
 ```</pre></details>
   <div class="answers"><article class="ans" data-key="code_explain:A">
-  <header><span class="letter">A</span><span class="who">groq-120b · 0.6 s to first word, 1.0 s in all · checks 5/5</span></header>
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.5 s to first word, 0.9 s in all · checks 5/5</span></header>
   <pre>## What it does
-The `add_tag` function appends a given `tag` to a list of tags and returns the list.  
+The `add_tag` function appends a given tag to a list (defaulting to an empty list) and returns the list.  
 The `average` function attempts to compute the arithmetic mean of a list of numbers.
 
 ## Problems
 - `add_tag` uses a mutable default argument (`tags=[]`), causing the same list to be shared across calls.  
-- `average` skips the first element because the loop starts at index 1, leading to an incorrect sum.  
-- `average` will raise a `ZeroDivisionError` when `nums` is empty.
+- `average` starts the loop at index 1, so it skips the first element of `nums`.  
+- `average` does not handle an empty list, which would raise a division‑by‑zero error.  
 
 ## Better version
 ```python
 def add_tag(tag, tags=None):
-    &quot;&quot;&quot;Append a tag to a list and return the list without sharing state.&quot;&quot;&quot;
+    &quot;&quot;&quot;Append `tag` to a list and return the list without sharing state.&quot;&quot;&quot;
     if tags is None:
         tags = []
     tags.append(tag)
@@ -340,23 +343,24 @@ def add_tag(tag, tags=None):
 
 
 def average(nums):
-    &quot;&quot;&quot;Return the arithmetic mean of a sequence of numbers.&quot;&quot;&quot;
+    &quot;&quot;&quot;Return the arithmetic mean of `nums`. Returns None for an empty list.&quot;&quot;&quot;
     if not nums:
-        raise ValueError(&quot;Cannot compute average of an empty sequence&quot;)
-    total = sum(nums)          # sum all elements
-    return total / len(nums)   # divide by the number of elements
+        return None
+    total = sum(nums)
+    return total / len(nums)
 ```</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="code_explain:B">
-  <header><span class="letter">B</span><span class="who">groq-20b · 0.4 s to first word, 0.7 s in all · checks 5/5</span></header>
+  <header><span class="letter">B</span><span class="who">groq-20b · 0.4 s to first word, 0.6 s in all · checks 5/5</span></header>
   <pre>## What it does
-The `add_tag` function appends a given `tag` to a list called `tags` and returns the list.  
-The `average` function calculates the average of a list of numbers, but it skips the first element in the calculation.
+The `add_tag` function adds a given `tag` to a list of `tags` and returns the updated list.  
+The `average` function calculates the average of a list of numbers, but it skips the first element when summing.
 
 ## Problems
-- `add_tag` uses a mutable default argument (`tags=[]`), causing all calls to share the same list.  
-- `average` starts the loop at index 1, so the first number in `nums` is ignored, leading to an incorrect average.  
-- `average` does not handle an empty list, which would raise a division‑by‑zero error.
+- `tags=[]` uses a mutable default argument, causing tags to persist across calls.  
+- `average` starts the loop at index 1, so the first number is ignored in the sum.  
+- `average` divides by the full length of the list, which can produce an incorrect result when the first element is omitted.  
+- No input validation is performed (e.g., empty list division by zero).
 
 ## Better version
 ```python
@@ -368,7 +372,7 @@ def add_tag(tag, tags=None):
 
 def average(nums):
     if not nums:
-        return 0  # or raise ValueError(&quot;Cannot average an empty list&quot;)
+        raise ValueError(&quot;Cannot compute average of an empty list&quot;)
     total = sum(nums)
     return total / len(nums)
 ```
@@ -382,11 +386,11 @@ def average(nums):
 
 um so basically i wanted to uh tell you that the the deployment is moved to friday because uh the qa team found two issues in the payment flow and uh we need to fix them first so yeah um please don&#x27;t don&#x27;t share the build with the client before that okay</pre></details>
   <div class="answers"><article class="ans" data-key="dictation_cleanup:A">
-  <header><span class="letter">A</span><span class="who">groq-20b · 0.4 s to first word, 0.5 s in all · checks 4/4</span></header>
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.5 s in all · checks 4/4</span></header>
   <pre>I wanted to tell you that the deployment has been moved to Friday because the QA team found two issues in the payment flow and we need to fix them first. Please do not share the build with the client before that.</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="dictation_cleanup:B">
-  <header><span class="letter">B</span><span class="who">groq-120b · 0.6 s to first word, 0.7 s in all · checks 4/4</span></header>
+  <header><span class="letter">B</span><span class="who">groq-120b · 0.3 s to first word, 0.4 s in all · checks 4/4</span></header>
   <pre>Basically, I wanted to tell you that the deployment is moved to Friday because the QA team found two issues in the payment flow, and we need to fix them first. Please don&#x27;t share the build with the client before that.</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article></div>
@@ -403,15 +407,15 @@ E4 12:15 email sent to Vikram Rao, subject &quot;API docs and load test report&q
 E5 13:10-13:35 call, WhatsApp, label Timepass
 E6 dictation: 6 times, 412 words in total</pre></details>
   <div class="answers"><article class="ans" data-key="journal:A">
-  <header><span class="letter">A</span><span class="who">groq-20b · 0.6 s to first word, 0.7 s in all · checks 4/5</span></header>
-  <pre>I started the day by committing changes to the AI‑Bot repository, adding an API key window and Credential Manager storage [E1]. Later I pushed another commit that implemented the P0‑1 two‑lane capture check [E2]. I had a 16‑minute Teams call where we decided to move dark mode to the next sprint [E3]. After that, I sent an email to Vikram Rao with the API docs and load test report, made one timepass call, and finished the day with six dictations totaling 412 words [E4, E5, E6].</pre>
+  <header><span class="letter">A</span><span class="who">groq-20b · 0.5 s to first word, 0.6 s in all · checks 4/5</span></header>
+  <pre>I started the day by committing changes to the AI‑Bot repository, adding an API key window and storing credentials in the Credential Manager [E1]. Later I pushed another commit that added a two‑lane capture check for P0‑1 [E2]. I had a 16‑minute Teams call where we decided to move dark mode to the next sprint [E3]. After that, I sent an email to Vikram Rao with the API docs and load test report, had a single Timepass call, and finished the day with six dictation sessions totaling 412 words [E4, E5, E6].</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="journal:B">
-  <header><span class="letter">B</span><span class="who">groq-120b · 0.8 s to first word, 1.1 s in all · checks 5/5</span></header>
-  <pre>I made two commits to the AI‑Bot repository, adding an API key window with Credential Manager storage (3f9c2a1) and implementing a two‑lane capture check (b7d41e0). [E1, E2]  
-I had a Teams call labeled Work for 16 minutes, during which we decided to move dark mode to the next sprint. [E3]  
-I sent an email to Vikram Rao with the subject “API docs and load test report.” [E4]  
-I spent a brief timepass call and did a dictation session of six entries totaling 412 words. [E5, E6]</pre>
+  <header><span class="letter">B</span><span class="who">groq-120b · 1.0 s to first word, 1.2 s in all · checks 5/5</span></header>
+  <pre>I made a commit 3f9c2a1 in AI‑Bot adding an API key window and Credential Manager storage. [E1]  
+Later I committed b7d41e0 in the same repository for the P0‑1 two‑lane capture check. [E2]  
+I had a Teams call labeled Work where we decided to move dark mode to the next sprint. [E3]  
+I emailed Vikram Rao the API docs and load test report, made one time‑pass call, and did a dictation of six entries totaling 412 words. [E4, E5, E6]</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article></div>
 </section>
@@ -419,12 +423,12 @@ I spent a brief timepass call and did a dictation session of six entries totalin
   <h2><span class="n">10</span>Quick answer</h2>
   <details><summary>Show the prompt</summary><pre class="prompt">In two sentences: what is the difference between a process and a thread?</pre></details>
   <div class="answers"><article class="ans" data-key="answer:A">
-  <header><span class="letter">A</span><span class="who">groq-120b · 0.5 s to first word, 0.6 s in all · checks 3/3</span></header>
+  <header><span class="letter">A</span><span class="who">groq-120b · 0.3 s to first word, 0.4 s in all · checks 3/3</span></header>
   <pre>A process is an independent execution unit that has its own memory space, resources, and at least one thread, while a thread is a lightweight execution path that runs within a process and shares that process’s memory and resources. Consequently, multiple threads can operate concurrently inside the same process, whereas separate processes run in isolation from each other.</pre>
   <div class="stars" role="group" aria-label="Score answer A"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article><article class="ans" data-key="answer:B">
   <header><span class="letter">B</span><span class="who">groq-20b · 0.4 s to first word, 0.5 s in all · checks 3/3</span></header>
-  <pre>A process is an independent program instance that has its own memory space and system resources, while a thread is a smaller unit of execution that runs within a process and shares the process’s memory and resources. Threads can execute concurrently within the same process, allowing multiple tasks to run in parallel without the overhead of separate processes.</pre>
+  <pre>A process is an independent program instance that owns its own memory space and system resources, while a thread is a smaller unit of execution that runs within a process and shares the process’s memory and resources. Threads can communicate more easily with each other because they share the same address space, but a crash in one thread can bring down the entire process.</pre>
   <div class="stars" role="group" aria-label="Score answer B"><button data-v="1" aria-label="1 of 5">1</button><button data-v="2" aria-label="2 of 5">2</button><button data-v="3" aria-label="3 of 5">3</button><button data-v="4" aria-label="4 of 5">4</button><button data-v="5" aria-label="5 of 5">5</button></div>
 </article></div>
 </section>

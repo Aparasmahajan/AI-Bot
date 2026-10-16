@@ -6,7 +6,7 @@
 </aside>
 
 <main class="sheet">
-<header class="runhead"><span><b>MWB</b> · work assistant for Windows</span><span>POC specification · MWB-POC-001 · Rev F · 12 Oct 2026</span></header>
+<header class="runhead"><span><b>MWB</b> · work assistant for Windows</span><span>POC specification · MWB-POC-001 · Rev G · 16 Oct 2026</span></header>
 <div class="inner">
 
 <div class="title">
@@ -18,14 +18,15 @@
   <div>
     <dl class="keyspecs">
       <dt>Speech</dt><dd>Parakeet TDT 0.6B v2, int8</dd>
-      <dt>Dictation</dt><dd>0.91 s for a 5 s phrase</dd>
+      <dt>Dictation</dt><dd>text 0.98 s after you finish</dd>
       <dt>Accuracy</dt><dd>0 misheard words in 167</dd>
-      <dt>At idle</dt><dd>~40 MB (target)</dd>
+      <dt>At idle</dt><dd>36 MB private</dd>
       <dt>Speech worker</dt><dd>~1.0 GB, exits when idle</dd>
-      <dt>Writing</dt><dd>API first · local Qwen3.5 fallback</dd>
+      <dt>Meetings</dt><dd>whisper small · Hindi, Hinglish</dd>
+      <dt>Writing</dt><dd>Groq first · local Qwen3.5 fallback</dd>
       <dt>Host</dt><dd>i7-1185G7 · 16 GB · no GPU</dd>
     </dl>
-    <p class="k-cap">Speed, accuracy and worker memory were measured on this laptop on 11 Oct 2026 with 4 CPU threads and clean synthetic speech (§6).</p>
+    <p class="k-cap">Measured on this laptop: speech accuracy and worker memory on 11 Oct 2026 with 4 CPU threads and clean synthetic speech (§6); dictation speed and idle memory in the built app on 14 Oct, the median of 20 synthetic phrases on battery (§17).</p>
   </div>
 </div>
 
@@ -35,17 +36,17 @@
   <section id="s1">
     <h2><span class="n">1</span>Features</h2>
     <ul class="feat">
-      <li><b>Wispr-style dictation.</b> Double-tap Caps Lock, talk, and the text appears in whatever app you are typing in. On this laptop a 5-second phrase is transcribed in 0.91 s.</li>
-      <li><b>Ask by voice.</b> The same double tap answers questions about your day, or anything else, in a small card.</li>
-      <li><b>A floating indicator</b> with eight skins or your own images. Double-tap Alt to show or hide it.</li>
-      <li><b>The speech engine from AI-App</b>: NVIDIA Parakeet TDT 0.6B v2 (int8), with whisper.cpp for Hindi and Hinglish.</li>
+      <li><b>Wispr-style dictation.</b> Double-tap Caps Lock, talk, and the text appears in whatever app you are typing in. In the built app the text arrives 0.98 s after you finish (median).</li>
+      <li><b>Ask by voice.</b> The same double tap answers questions about your day, or anything else, in a panel that rises out of the indicator.</li>
+      <li><b>A floating indicator</b>: the Capsule skin now, with seven more skins or your own images in Phase 5. Double-tap Alt to show or hide it.</li>
+      <li><b>The speech engines from AI-App</b>: NVIDIA Parakeet TDT 0.6B v2 (int8) for dictation, and whisper small through whisper.cpp for meetings, which are in English, Hindi and Hinglish.</li>
       <li><b>Automatic meeting capture in any video-call app</b>: Teams, Zoom, Google Meet, Webex, Slack and others, desktop or browser. You and the other side are recorded on separate lanes.</li>
       <li><b>Work or Timepass.</b> Every meeting gets a label, a reason and a time split, and the labels improve from your corrections.</li>
       <li><b>Email help.</b> Explains a selected email and drafts replies in your style. It never sends anything itself.</li>
       <li><b>Code help.</b> Explains and optimises selected code in any editor or browser.</li>
       <li><b>End-of-day journal</b> with commits and their SHAs, meetings, email, notes and time per project, ready at 18:30.</li>
-      <li><b>About 40 MB at idle.</b> Models run in separate processes that start when needed and exit when idle.</li>
-      <li><b>Speech local, writing through an API for now.</b> Speech runs on a model already installed on this laptop, and audio never leaves it. Notes, email, code and the journal go to an API (Groq, as in AI-App), so they need almost no memory. Qwen3.5, downloaded on 12 October, is kept in sync on this laptop as the fallback, and any skill can be set to local-only.</li>
+      <li><b>About 36 MB at idle</b> (private memory, measured). Models run in separate processes that start when needed and exit when idle.</li>
+      <li><b>Speech local, writing through an API for now.</b> Speech runs on a model already installed on this laptop, and audio never leaves it. Notes, email, code and the journal go to an API (Groq, as in AI-App, with <code>openai/gpt-oss-120b</code>), so they need almost no memory. Qwen3.5, downloaded on 12 October, is kept in sync on this laptop as the fallback, and any skill can be set to local-only.</li>
       <li><b>Effort you set per device.</b> Four hardware profiles and four effort levels. On a new laptop a setup screen suggests a level and you choose.</li>
     </ul>
   </section>
@@ -64,7 +65,8 @@
     <section id="s3">
       <h2><span class="n">3</span>Description</h2>
       <p>MWB is a Windows tray assistant designed so that nothing heavy stays in memory. A small core process is always running. It owns the hotkeys, the tray icon, the meeting detector, the data collectors and the database.</p>
-      <p>Speech runs in a separate worker process. It starts when you start talking or a meeting begins, and exits after it has been idle for a while. Ending the process is the only reliable way to give memory back to Windows. Language work goes to an API for now; when the API can't be used, a local language worker starts and exits the same way.</p>
+      <p>Dictation speech runs in a separate worker process. It starts with MWB when memory allows, or when you start talking, and exits after it has been idle for 15 minutes. Meeting speech starts whisper once for each piece of audio, and each run exits when its piece is done. Ending the process is the only reliable way to give memory back to Windows. Language work goes to an API for now; when the API can't be used, a local language worker starts and exits the same way.</p>
+      <p><b>Status at Rev G, 16 October 2026.</b> Phases 1 to 3 were built on 14 October: dictation, meetings, and understanding (notes, labels, email, code, rewrite and answers). Each phase's checks that need real use, such as your own voice, a week of calls or your first 20 labels, are still open (§17). The journal (Phase 4) and the setup screen, effort levels and other skins (Phase 5) are not built yet. Where the build differs from the plan, this revision describes what was built and says why.</p>
       <p>This specification is based on an audit of your HP EliteBook 840 G8, a review of the AI-App code, and benchmarks run on this laptop. Sections 4 to 6 report what was found. Sections 7 to 16 define what to build. Sections 17 to 19 cover the plan, the risks and the decisions that are yours. If a term is new to you, section 20 explains it. To see the UI and these flows in action, open the <a href="https://claude.ai/artifact/JkKapQwt42FiU1TMUcjFCZ" target="_blank" rel="noopener">interactive demo</a>.</p>
     </section>
   </div>

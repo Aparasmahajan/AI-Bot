@@ -26,11 +26,51 @@ Read `README.md` and `TODO.md` first. The design document, `docs/MWB-POC-Design.
   - Install with `.venv\Scripts\python.exe -m pip install --require-hashes --only-binary :all: -r requirements.txt`.
   - Add a new library there, with its hash, only after the user approves it.
 - **`mwb/`** is the app, laid out as in design §16.2. So far it has:
+  - `app.py`: the core (`python -m mwb`, or `Start MWB.cmd`): one instance, one message loop with a 15 ms tick, the hotkeys, the tray and the indicator. `MWB_TEST_AUDIO=<wav>` plays a file in place of the mic, for tests only;
+  - `winapi.py`, `hotkeys.py`: Win32 through ctypes, with no keyboard hook. Double taps follow P0-2, and paste waits until Ctrl, Alt, Shift, Win, Caps Lock and Space are up;
+  - `audio/capture.py`, `audio/vad.py`: the mic, open only while dictating; and AI-App's adaptive VAD in pure Python (`math.sumprod`), which cuts pieces at 500 ms pauses, 10 s at most;
+  - `supervisor.py`, `memory_guard.py`, `workers/asr/server.py`: the speech worker in AI-App's Parakeet venv, with a token in `MWB_TOKEN`, a random port and an idle exit. The guard refuses to load below 1.0 GB free;
+  - `skills/dictate.py`, `skills/cleanup.py`, `insert.py`: dictation, the clean-up rules and the paste;
+  - `store/`: SQLite in `%LOCALAPPDATA%\MWB\mwb.db` (dictation history, FTS5);
+  - `config/`: `default.toml`, overridden by `%APPDATA%\MWB\config.toml`, and `dictionary.txt`;
   - `credentials.py`: Credential Manager through ctypes;
   - `llm/providers.py` and `llm/client.py`:
     - the Groq entry and the key check;
     - `Connection.chat()`, a kept-alive streaming client that times the first word and never raises on API errors;
-  - `ui/api_key.py`: the key window, opened by `Set API key.cmd`.
+  - `ui/api_key.py`, `ui/tray.py`, `ui/indicator.py`, `ui/art.py`: the key window (opened by `Set API key.cmd` or the tray), the tray, and the Capsule indicator;
+  - Phase 2, meetings:
+    - `sensors/meeting_detector.py` reads which apps hold the mic from the registry every 5 s; the rules are in `config/vc_apps.toml`;
+    - `sensors/system.py`: the power and CPU state;
+    - `audio/recorder.py`: two lanes, mic and loopback, with loopback gaps filled with silence by the clock;
+    - `skills/meeting.py`: ask, record, transcribe, finish;
+    - `skills/transcripts.py`: merge the lanes, remove echo, import .vtt, .docx and .txt;
+    - `collectors/outlook.py`: the meeting's subject from the calendar;
+    - `ui/cards.py`: the "Record this call?" card (Tk on its own thread, never takes focus);
+    - `ui/today.py`: the Today page on 127.0.0.1 with a token;
+    - `MWB_TEST_MEETING="me.wav;them.wav"` replaces both devices, for tests only.
+  - Phase 3, understanding:
+    - `llm/router.py` sends to the API first and falls back to the local model; `allow_local=False` makes batch jobs wait;
+    - `llm/local.py` runs llama-server from `Tools\llamacpp` with its own `--api-key`, and exits after 5 idle minutes;
+    - `llm/prompts.py`: one prompt per skill;
+    - `skills/notes.py`: notes, action items and labels (stages A to C);
+    - `skills/dates.py`: dates by code;
+    - `skills/assist.py`: email, code, rewrite, answer, and `decide()`, which picks write or answer;
+    - `skills/answer.py`: facts with tags, and citation checking;
+    - `sensors/focus.py`: is the cursor in a text box (UI Automation);
+    - `collectors/selection.py`: copy the selection, restoring the clipboard;
+    - results (answers, drafts, rewrites) open in the indicator's place: `ui/indicator.py` `ResultPanel`, drawn by `art.panel()`. The window takes clicks only while a panel is open and never takes the focus (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`). `Cards.result()` hands over to it.
+    - Tk cards (`ui/cards.py`, "Record this call?"): never call `deiconify()`: Tk would take the focus. Show them with `ShowWindow(SW_SHOWNOACTIVATE)`.
+  - `tests/e2e_answers.py` asks the 10 day questions through Groq on a scratch database.
+- **Meeting speech** uses whisper-cli (AI-App's build), started once per 22–28 s piece, at below-normal priority.
+  - Not whisper-server, which held 2.2 GB. whisper-cli peaks at 0.79 GB and returns it when it exits.
+  - Pieces are WAV files in `%LOCALAPPDATA%\MWB\audio\m<id>`, deleted once transcribed.
+  - Live transcription runs only on mains power with a calm CPU; otherwise it runs after the call.
+  - Every child process is placed in a Windows job (`winapi.end_with_me`), so it ends when the core ends.
+- **Tests.** `.venv\Scripts\python.exe -m unittest discover -s tests -t .` runs them.
+  - `tests/test_paste.py` opens a small window of its own and skips itself when it can't come to the front. Don't run it, or `tests/e2e_core.py`, while the user is typing: their keys go into the test window.
+  - `tests/bench_dictation.py <folder>` (add `--joined` for about 10 s of speech) needs the clips from `tests/make_phrases.ps1` and about 1 GB free.
+  - `tests/e2e_meeting.py <folder>` plays a 12-turn conversation through the meetings skill into a scratch database. It needs about 1 GB free and takes several minutes.
+- **Dictated text** lives only in `mwb.db`. Logs record lengths and timings, never the words, and never window titles.
 - **Window style.** Windows use Tkinter with the clam theme and the demo's light colours. Set DPI awareness before Tk starts.
 - **The Groq key** is in Credential Manager as `MWB/api-key/groq`.
   - Read it only in code that sends it to Groq.

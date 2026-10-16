@@ -1,6 +1,7 @@
 
 <section id="s12" class="sec">
 <h2><span class="n">12</span>Profiles, effort and models</h2>
+<p class="small"><i>Rev G:</i> profiles, calibration, effort levels and the setup screen are Phase 5 and not built yet. On this laptop MWB runs as Lean with fixed settings from <code>mwb\config\default.toml</code> (§16.3).</p>
 <p class="lead">The same code runs on every machine. A profile decides which models it uses, how many threads they get and what stays warm. An effort governor decides how hard MWB works from minute to minute (§12.5), and MWB re-tunes itself when you move it to another laptop (§12.6).</p>
 <figure class="fig">
   <div class="fig-frame">{{fig:tiers}}</div>
@@ -20,9 +21,9 @@
 <thead><tr><th>Capability</th><th>Lean<br><span class="small">this laptop today</span></th><th>Balanced<br><span class="small">+ second 16 GB stick</span></th><th>Performance<br><span class="small">next laptop with a GPU</span></th><th>Workstation<br><span class="small">64 GB+, 24 GB+ VRAM</span></th></tr></thead>
 <tbody>
 <tr><th scope="row">Dictation speech</th><td>Parakeet int8, CPU, 4 threads, loaded on demand</td><td>Same, kept warm through work hours</td><td>Parakeet on the GPU, or a streaming model for text as you speak</td><td>Same, plus a large model for difficult audio</td></tr>
-<tr><th scope="row">Hindi and Hinglish</th><td>whisper.cpp small, batch only; large-v3-turbo only overnight</td><td>whisper small; large-v3-turbo overnight (0.45× real time on this CPU)</td><td>whisper turbo on the GPU; evaluate Qwen3-ASR</td><td>Same</td></tr>
-<tr><th scope="row">Meeting speech</th><td>Parakeet, 2 threads, below normal</td><td>Plus diarization (Sortformer, up to 4 speakers)</td><td>Granite Speech 4.1 2B or Cohere Transcribe on the GPU</td><td>Diarizing transcribers, long-form batch</td></tr>
-<tr><th scope="row">Language model, interactive</th><td>API (Groq, gpt-oss-120b) for now; local fallback Qwen3.5 2B, or 4B when there is room</td><td>API, or local Qwen3.5 4B kept warm through work hours</td><td>Qwen3.5 9B on the GPU</td><td>Gemma 4 26B-A4B or 31B class</td></tr>
+<tr><th scope="row">Hindi and Hinglish</th><td>whisper small for every meeting (decision 5); large-v3-turbo only overnight</td><td>whisper small; large-v3-turbo overnight (0.45× real time on this CPU)</td><td>whisper turbo on the GPU; evaluate Qwen3-ASR</td><td>Same</td></tr>
+<tr><th scope="row">Meeting speech</th><td>whisper small through whisper-cli, 2 threads, below normal, live on mains power and after the call on battery</td><td>Plus diarization (Sortformer, up to 4 speakers)</td><td>Granite Speech 4.1 2B or Cohere Transcribe on the GPU</td><td>Diarizing transcribers, long-form batch</td></tr>
+<tr><th scope="row">Language model, interactive</th><td>API (Groq, gpt-oss-120b on low reasoning; gpt-oss-20b for labels and short jobs); local fallback Qwen3.5 2B, or 4B for code</td><td>API, or local Qwen3.5 4B kept warm through work hours</td><td>Qwen3.5 9B on the GPU</td><td>Gemma 4 26B-A4B or 31B class</td></tr>
 <tr><th scope="row">Language model, batch</th><td>API; the 4B fallback at night if the API is down</td><td>API or local 4B</td><td>9B</td><td>26B–31B, long context</td></tr>
 <tr><th scope="row">Code</th><td>API; local fallback Qwen3.5 4B</td><td>API or local Qwen3.5 9B</td><td>Qwen3-Coder 30B-A3B or gpt-oss-20b</td><td>Larger coding models</td></tr>
 <tr><th scope="row">Live features</th><td>None</td><td>Rolling meeting notes every 10 minutes</td><td>Live captions, "what did I miss"</td><td>Search across months of meetings</td></tr>
@@ -160,13 +161,13 @@ npu = false
 
 [calibration]                    <span class="c"># measured at setup</span>
 speech_5s_phrase_s = 0.91
-api_first_words_s = 0.6          <span class="c"># example; Phase 0 measures the real values</span>
+api_first_words_s = 0.6          <span class="c"># measured by P0-4 on 13 Oct: 0.58 s median</span>
 local_tokens_per_s = 10.3        <span class="c"># Qwen3.5 2B, measured 12 Oct</span>
 
 [local_llm]                      <span class="c"># found on this machine: the fallback route</span>
-server = 'C:\Users\parmahaj\Tools\llamacpp\cpu\llama-server.exe'     <span class="c"># build 11015</span>
-model = 'C:\Users\parmahaj\Tools\llamacpp\models\Qwen3.5-2B-Q4_K_M.gguf'
-model_large = 'C:\Users\parmahaj\Tools\llamacpp\models\Qwen3.5-4B-Q4_K_M.gguf'   <span class="c"># when there is room</span>
+server = '%USERPROFILE%\Tools\llamacpp\cpu\llama-server.exe'     <span class="c"># build 11015</span>
+model = '%USERPROFILE%\Tools\llamacpp\models\Qwen3.5-2B-Q4_K_M.gguf'
+model_large = '%USERPROFILE%\Tools\llamacpp\models\Qwen3.5-4B-Q4_K_M.gguf'   <span class="c"># when there is room</span>
 
 [effort]                         <span class="c"># your choice on the setup screen</span>
 mode = "auto"                    <span class="c"># auto: adjust inside the range; fixed: always "highest"</span>
@@ -178,7 +179,7 @@ on_battery = "lower"             <span class="c"># lower | keep</span>
 journal = "E3"                   <span class="c"># runs at night on AC power, so it can afford more</span></code></pre>
 
 <h3><span class="n">12.7</span>API first, local model in sync</h3>
-<p>Your decision on 12 October: for now, language skills use an API key, because a local language model needs 2 to 3 GB of memory that this laptop rarely has free. Speech always runs locally. A local model already on the laptop is kept in sync as the fallback, so MWB keeps working without the network and can go fully local on a bigger laptop. No API key was used for this specification. On 12 October, at your request, Qwen3.5 2B and 4B and whisper large-v3-turbo were downloaded (5.2 GB, every file checked against Hugging Face), and Qwen2.5 was deleted for good.</p>
+<p>Your decision on 12 October: for now, language skills use an API key, because a local language model needs 2 to 3 GB of memory that this laptop rarely has free. Speech always runs locally. A local model already on the laptop is kept in sync as the fallback, so MWB keeps working without the network and can go fully local on a bigger laptop. On 13 October you saved MWB's own Groq key with <code>Set API key.cmd</code>, which checks it with Groq and keeps it in Windows Credential Manager as <code>MWB/api-key/groq</code>, and you said work text may go to Groq. On 12 October, at your request, Qwen3.5 2B and 4B and whisper large-v3-turbo were downloaded (5.2 GB, every file checked against Hugging Face), and Qwen2.5 was deleted for good.</p>
 <div class="tbl dense"><table>
 <thead><tr><th>Capability</th><th>Runs</th><th>On this laptop now</th><th>API option</th></tr></thead>
 <tbody>
@@ -191,12 +192,12 @@ journal = "E3"                   <span class="c"># runs at night on AC power, so
 <ol>
   <li><b>One set of prompts, one output check.</b> Each skill has a single prompt template and a single JSON schema. The citation validator and the SHA check run on answers from both routes.</li>
   <li><b>One contract.</b> The API and llama-server both speak OpenAI-compatible chat completions, so the router changes only the address and the model name.</li>
-  <li><b>A sync check.</b> Ten saved test prompts, one or two per skill, run through both routes in Phase 0, after any change to a prompt or a model, and once a week on AC power. If the local answer breaks the format, misses a fact or is too slow, the Today page says so.</li>
-  <li><b>Automatic fallback.</b> When the API fails (no network, no answer within 10 s, a rate limit or a bad key), the same request goes to the local model if the memory guard allows it. Otherwise it waits in a queue and MWB tells you.</li>
+  <li><b>A sync check.</b> Ten saved test prompts, one or two per skill, run through both routes in Phase 0, after any change to a prompt or a model, and once a week on AC power. As built, the core starts <code>docs/bench/p0_4_sync_check.py</code> once a week on mains power with the CPU under 60 %; the script skips the local half when memory is short, and writes its results to <code>docs/bench/p0_4/</code>. Showing the result on the Today page is still to do.</li>
+  <li><b>Automatic fallback.</b> When the API fails (no network, no word within 20 s, a rate limit, a bad key or no key), the same request goes to the local model if the memory guard allows it. A result panel that was already streaming starts again and says the local model is writing. If the local model can't load, the result panel says why, and a batch job waits and is tried again every 10 minutes.</li>
   <li><b>Local-only skills.</b> Any skill can be set to local-only in Settings, and its text then never leaves the laptop. Learning your email style starts that way, because it reads 30 sent emails at once.</li>
   <li><b>Going local later.</b> On a laptop with more memory, moving a skill to the local route is one setting, and the local model can grow to Qwen3.5 9B.</li>
 </ol>
-<p><b>The trade-off.</b> The API makes language work fast, a paragraph in 1 to 2 s against 5 to 15 s locally, and keeps MWB near 1 GB. In return, the text of your notes, email, code and journal goes to the API provider. Audio never does. Check that your company allows this for work content before using it on real meetings and mail; until then, set sensitive skills to local-only or use a company Azure OpenAI endpoint. Groq no longer offers Qwen, so the two routes use different model families, and the sync check is what keeps their output consistent. Keys are kept in Windows Credential Manager, the same DPAPI protection AI-App uses.</p>
+<p><b>The trade-off.</b> The API makes language work fast, a paragraph in 1 to 2 s against 5 to 15 s locally, and keeps MWB near 1 GB. In return, the text of your notes, email, code and journal goes to the API provider. Audio never does. On 13 October you said work text may go to Groq. Any skill can still be set to local-only, or pointed at a company Azure OpenAI endpoint. MWB's database logs each request's size, route and time, never its text. Groq no longer offers Qwen, so the two routes use different model families, and the sync check is what keeps their output consistent. Keys are kept in Windows Credential Manager, the same DPAPI protection AI-App uses.</p>
 <p class="small">A longer, plain-language guide to these models, written for someone new to AI, is in <code>MWB\docs\MWB-QA.md</code> under question 7.</p>
 </section>
 
@@ -212,27 +213,27 @@ journal = "E3"                   <span class="c"># runs at night on AC power, so
 <tbody>
 <tr><td class="nw"><kbd>Caps Lock</kbd> twice</td><td>Talk hands-free. MWB writes what you say, or answers if you ask a question (§9.7). Double-tap again, or pause for 2 s, to finish.</td><td>double-tap</td></tr>
 <tr><td class="nw"><kbd>Alt</kbd> twice</td><td>Show or hide the on-screen indicator (§13.3). The gesture can be changed in Settings.</td><td>double-tap</td></tr>
-<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd></td><td>Push-to-talk: speak while holding, release to type.</td><td>hold</td></tr>
-<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd></td><td>Rewrite the selected text by voice</td><td>hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd></td><td>Push-to-talk: speak while holding, release to type. On this laptop another app owns it, so MWB uses its fallback, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>.</td><td>hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd></td><td>Rewrite the selected text by voice. A quick press shows a hint.</td><td>hold</td></tr>
 <tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd></td><td>Explain the selected email or open Outlook item. Hold and speak to draft a reply.</td><td>press or hold</td></tr>
 <tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd></td><td>Explain and optimise the selected code. Hold and speak to describe code to write.</td><td>press or hold</td></tr>
 <tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd></td><td>Start or stop meeting recording by hand</td><td>toggle</td></tr>
-<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></td><td>Voice note into today's journal</td><td>hold</td></tr>
-<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>J</kbd></td><td>Open the Today page. With Shift added, write the journal now.</td><td>press</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></td><td>Voice note into today's journal (Phase 4)</td><td>hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>J</kbd></td><td>Open the Today page. With Shift added, write the journal now (Phase 4).</td><td>press</td></tr>
 <tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></td><td>Pause or resume everything: mic, sensors and all other hotkeys</td><td>toggle</td></tr>
-<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>W</kbd></td><td>Start MWB. Works even when MWB is not running.</td><td>press</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>W</kbd></td><td>Start MWB. Works even when MWB is not running (Phase 5; for now, double-click <code>Start MWB.cmd</code>).</td><td>press</td></tr>
 <tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd></td><td>Quit MWB</td><td>press</td></tr>
-<tr><td class="nw"><kbd>Esc</kbd></td><td>Cancel the current card or dictation</td><td>press</td></tr>
+<tr><td class="nw"><kbd>Esc</kbd></td><td>Cancel the dictation, or close the result panel or card. MWB registers Esc only while one of these is open.</td><td>press</td></tr>
 </tbody></table></div>
 
 <h3><span class="n">13.1</span>How the keys are wired</h3>
 <ul>
   <li><b>No keyboard hook.</b> Shortcuts are registered with the Win32 <code>RegisterHotKey</code> call and <code>MOD_NOREPEAT</code>. MWB never sees any other keystroke, so Defender has nothing keylogger-like to flag.</li>
-  <li><b>Double taps.</b> Caps Lock and Alt can't be registered as shortcuts without breaking their normal use, so the core checks the up and down state of only these two keys every 15 ms (<code>GetAsyncKeyState</code>). It cannot see any other key. Two clean taps within 350 ms count as a double tap. Caps Lock is put back to the state it had before the first tap, so the light never ends up changed. A single Alt tap still reaches your app as usual; in Office it briefly shows the key tips, and the second tap hides them again. Phase 0 task P0-2 checks that a 15 ms check catches at least 99 % of taps. If it doesn't, the fallback is a keyboard hook limited to these two keys, after checking with IT.</li>
-  <li><b>Hold detection.</b> After a hold shortcut fires, the core polls <code>GetAsyncKeyState</code> every 15 ms, only while the key is down, to see when you let go.</li>
+  <li><b>Double taps.</b> Caps Lock and Alt can't be registered as shortcuts without breaking their normal use, so the core checks the up and down state of only these two keys every 15 ms (<code>GetAsyncKeyState</code>). It cannot see any other key. Two clean taps within 350 ms count as a double tap. Caps Lock is put back to the state it had before the first tap, so the light never ends up changed. A single Alt tap still reaches your app as usual; in Office it briefly shows the key tips, and the second tap hides them again. Phase 0 task P0-2 checked that a 15 ms check catches at least 99 % of taps: it caught 50 of 50 for each key on 14 October, so no keyboard hook is needed.</li>
+  <li><b>Hold detection.</b> After a hold shortcut fires, the core polls <code>GetAsyncKeyState</code> every 15 ms, only while the key is down, to see when you let go. For Ctrl+Alt+E, K and R, a press shorter than 0.35 s is a press (explain); holding longer starts listening.</li>
   <li><b>Conflicts.</b> Each binding has a fallback list and logs <code>[hotkey] ctrl+alt+k could not be registered</code> when another app owns it, the same pattern as AI-App's <code>tryRegister()</code>.</li>
   <li><b>Starting MWB.</b> Setup adds a Start-menu shortcut with Ctrl+Alt+W as its shortcut key. Windows handles that key itself, which is why it works before MWB is running.</li>
-  <li><b>AltGr keyboards.</b> On layouts where Ctrl+Alt acts as AltGr, set <code>modifier = "ctrl+shift+alt"</code>.</li>
+  <li><b>AltGr keyboards.</b> On layouts where Ctrl+Alt acts as AltGr, give each shortcut a Ctrl+Shift+Alt fallback in <code>[hotkeys]</code>; each binding is a list, and the first one Windows accepts wins.</li>
   <li><b>Wispr Flow.</b> Turn it off before using MWB dictation, so only one app owns the mic and the push-to-talk keys.</li>
 </ul>
 
@@ -244,21 +245,38 @@ journal = "E3"                   <span class="c"># runs at night on AC power, so
 <div class="tbl dense"><table>
 <thead><tr><th>Moment</th><th>Notification text</th></tr></thead>
 <tbody>
-<tr><td>Call detected, week 1</td><td>"Zoom call started: Weekly sync. Record it? Yes / Not this one / Never for Zoom"</td></tr>
-<tr><td>Personal app on the mic</td><td>"WhatsApp is using the microphone. Record this call? Yes / No"</td></tr>
-<tr><td>New laptop detected</td><td>"New hardware: 32 GB and an 8 GB GPU. Switching to the Performance profile. Download about 8 GB of models? Yes / Later"</td></tr>
+<tr><td>Call detected, week 1</td><td>A card, not a notification: "Zoom is using the microphone. Weekly sync. Record this call? MWB transcribes it on this laptop and keeps no audio." Never for Zoom / Not this one / Record</td></tr>
+<tr><td>Personal app on the mic</td><td>The same card, with "This app is marked personal, so MWB always asks."</td></tr>
+<tr><td>New laptop detected (Phase 5)</td><td>"New hardware: 32 GB and an 8 GB GPU. Switching to the Performance profile. Download about 8 GB of models? Yes / Later"</td></tr>
 <tr><td>Recording starts</td><td>"Recording Sprint review. Press Ctrl+Alt+M to stop."</td></tr>
+<tr><td>Transcript ready</td><td>"Transcript ready: Sprint review · 45 min. Press Ctrl+Alt+J to open it."</td></tr>
 <tr><td>Notes ready</td><td>"Notes ready: Sprint review · Work · 45 min · 3 action items for you"</td></tr>
-<tr><td>Memory short</td><td>"Journal will run when 3 GB is free, or press Ctrl+Alt+Shift+J to run it now with a smaller model."</td></tr>
-<tr><td>Journal ready</td><td>"Your journal for Monday is ready. Press Ctrl+Alt+J to open it."</td></tr>
+<tr><td>Speech can't load</td><td>"Only 0.62 GB of memory is free, and speech needs 1.00 GB. Close some windows and try again."</td></tr>
+<tr><td>Memory short (Phase 4)</td><td>"Journal will run when 3 GB is free, or press Ctrl+Alt+Shift+J to run it now with a smaller model."</td></tr>
+<tr><td>Journal ready (Phase 4)</td><td>"Your journal for Monday is ready. Press Ctrl+Alt+J to open it."</td></tr>
 </tbody></table></div>
 
 <h3><span class="n">13.3</span>On-screen indicator</h3>
-<p>Like the small pill Wispr Flow keeps at the bottom of the screen, MWB can show a floating indicator that tells you at a glance what it is doing. It sits 48 px above the taskbar on the screen you are working on, lets clicks pass straight through, and never takes the keyboard focus, so your text still lands in your app. Double-tap Alt to show or hide it. MWB keeps working either way, and the tray icon still shows the state.</p>
+<p>Like the small pill Wispr Flow keeps at the bottom of the screen, MWB can show a floating indicator that tells you at a glance what it is doing. It sits 48 px above the taskbar on the screen you are working on, lets clicks pass straight through (except on an open result panel), and never takes the keyboard focus, so your text still lands in your app. Double-tap Alt to show or hide it. MWB keeps working either way, and the tray icon still shows the state.</p>
 <figure class="fig">
   <div class="fig-frame">{{fig:skins}}</div>
-  <figcaption><b>Figure 13.3</b>The eight built-in skins in their four main states: blue while MWB listens, amber while it works, green when the text is in or the answer is ready. These are the tray's colours. During a meeting recording every skin adds the orange ring, and paused greys it out.</figcaption>
+  <figcaption><b>Figure 13.3</b>The eight built-in skins in their four main states: blue while MWB listens, amber while it works, green when the text is in or the answer is ready. These are the tray's colours. During a meeting recording every skin adds the orange ring, and paused greys it out. Phase 1 built the Capsule; the other seven come in Phase 5.</figcaption>
 </figure>
+<p><b>Results in the indicator's place.</b> Answers, email and reply drafts, code explanations and rewrites open where the indicator is, as in Wispr Flow, not in a separate window. While MWB works, the pill shows three amber dots; then a dark panel, 440 px wide at 100 % scale, fades in and rises out of the pill, and the text streams into it. Up to nine lines show at once; the mouse wheel scrolls a longer answer, and a soft fade shows there is more above or below. The buttons sit in the panel's footer, with the main one on the right in blue.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:panel}}</div>
+  <figcaption><b>Figure 13.4</b>A result in the indicator's place. The pill shows amber dots while MWB works, the panel rises out of it with the text and the buttons, and after Copy, Insert or Replace the pill shows a green tick for about 1.2 s. The pill and the panel are dark in both themes, as on screen.</figcaption>
+</figure>
+<div class="tbl dense"><table>
+<thead><tr><th>You do</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td>Click <b>Copy</b>, <b>Insert</b> or <b>Replace</b></td><td>The panel closes, and the pill shows a green tick with "Copied", "Inserted" or "Replaced" for about 1.2 s</td></tr>
+<tr><td>Click <b>Open diff in VS Code</b> or <b>Open as Outlook draft</b></td><td>That opens, and the panel stays, so you can still Replace or Copy afterwards</td></tr>
+<tr><td>Turn the mouse wheel over the panel</td><td>A long answer scrolls</td></tr>
+<tr><td>Press <kbd>Esc</kbd>, or click <b>×</b></td><td>The panel closes</td></tr>
+<tr><td>Ask something new while a panel is open</td><td>The new result replaces it</td></tr>
+</tbody></table></div>
+<p>Clicking the panel never takes the keyboard focus, so Insert and Replace still paste into the app you were typing in. A result you asked for shows even over a full-screen app. The "Record this call?" card is not a result, so it stays a small card at the bottom right (§13.2).</p>
 <div class="tbl dense"><table>
 <thead><tr><th>Setting</th><th>Choices</th><th>Default</th></tr></thead>
 <tbody>
@@ -275,7 +293,8 @@ journal = "E3"                   <span class="c"># runs at night on AC power, so
 </tbody></table></div>
 <ul>
   <li><b>Your own skins:</b> put one PNG per state (<code>idle.png</code>, <code>listening.png</code>, <code>working.png</code>, <code>done.png</code>, <code>recording.png</code>, <code>paused.png</code>) in <code>%APPDATA%\MWB\skins\&lt;name&gt;\</code> and it appears in the Skin list. Changes apply without a restart.</li>
-  <li><b>How it is drawn:</b> a small layered Windows window with per-pixel transparency, painted with Pillow at the screen's DPI. It redraws at 30 frames per second only while listening or working; when idle it is one still image. That adds roughly 10–15 MB to the core and no measurable CPU at rest <span class="tag est">estimate</span>.</li>
+  <li><b>How it is drawn:</b> a small layered Windows window with per-pixel transparency, painted with Pillow at the screen's DPI; the pill and the result panel share it. It redraws at 30 frames per second only while listening or working; when idle it is one still image. That adds roughly 10–15 MB to the core and no measurable CPU at rest <span class="tag est">estimate</span>.</li>
+  <li><b>Smooth, and light on the laptop:</b> the pill eases between its sizes (resting, listening, the tick) instead of jumping, and the voice bars rise quickly and fall gently, so they follow your voice without flickering. The drawing surface is kept and reused, and a listening frame takes about 0.3 ms <span class="tag meas">measured</span>. Size changes and fades run at 60 frames per second only for the 0.2 s they last. Streaming text redraws the panel at most 12 times a second, about 4 ms each, and each line of text is drawn once and reused <span class="tag meas">measured</span>.</li>
   <li><b>Meetings stay visible:</b> while a meeting is being recorded, every skin shows the orange recording ring, and the tray keeps showing it even when the indicator is hidden.</li>
 </ul>
 </section>

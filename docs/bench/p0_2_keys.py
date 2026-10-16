@@ -27,7 +27,7 @@ user32.SetClipboardData.argtypes = [wt.UINT, wt.HANDLE]
 TICK = 0.015            # the 15 ms check
 MAX_TAP = 0.25          # a key held longer than this is not a tap
 DOUBLE = 0.35           # second key-down within 350 ms of the first key-up
-VK_CAPITAL, VK_MENU, VK_SPACE, VK_CONTROL = 0x14, 0x12, 0x20, 0x11
+VK_CAPITAL, VK_MENU, VK_SPACE, VK_CONTROL, VK_SHIFT = 0x14, 0x12, 0x20, 0x11, 0x10
 OTHERS = {'Ctrl': 0x11, 'Shift': 0x10, 'Win': 0x5B, 'RWin': 0x5C, 'Tab': 0x09}
 MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, WM_HOTKEY = 0x1, 0x2, 0x4000, 0x0312
 CF_UNICODETEXT, GMEM_MOVEABLE = 13, 0x2
@@ -167,7 +167,9 @@ def hold_and_paste(n, holds, log):
     while down(VK_SPACE) and down(VK_CONTROL) and down(VK_MENU):
         time.sleep(TICK)
     held = time.perf_counter() - t0
-    while down(VK_CONTROL) or down(VK_MENU) or down(VK_SPACE):   # wait for every key to be up
+    # Wait for every key to be up, Shift too (the fallback uses it): a held Shift turns the paste into
+    # Ctrl+Shift+V, which VS Code takes as "open Markdown preview".
+    while down(VK_CONTROL) or down(VK_MENU) or down(VK_SPACE) or down(VK_SHIFT):
         time.sleep(TICK)
     released = time.perf_counter() - t0 - held
     holds.append(held)

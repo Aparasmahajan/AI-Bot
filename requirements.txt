@@ -10,4 +10,9 @@ PyAudioWPatch==0.2.12.9 \
 comtypes==1.4.17 \
     --hash=sha256:4e0a221dde2c589b82977bed802efd71cd5eb67a380347b732e02735e597f586
 
-# Phase 1, not installed yet: pillow==12.3.0, pystray==0.19.5, six==1.17.0
+# Phase 1, approved 14 Oct 2026
+# Pillow: paints the on-screen indicator and the tray icons. Released 1 Jul 2026.
+pillow==12.3.0     --hash=sha256:fdafc9cce40277e0f7a0feabce0ee50dd2fa1800f3b38015e51296b5e814048d
+# pystray: the tray icon and its menu. Released 17 Sep 2023; needs Pillow and six.
+pystray==0.19.5     --hash=sha256:a0c2229d02cf87207297c22d86ffc57c86c227517b038c0d3c59df79295ac617
+six==1.17.0     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274

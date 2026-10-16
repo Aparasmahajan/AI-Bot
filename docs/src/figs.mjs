@@ -151,10 +151,10 @@ export function figBlocks() {
     b += ARR([[160, y + 21], [198, y + 21]], audio ? 'ln-s' : 'ln');
   });
   // core
-  b += RECT(200, 14, 420, 476, 'rg') + T(212, 33, 'mwb-core · always on · target ≤ 60 MB', 'm b');
+  b += RECT(200, 14, 420, 476, 'rg') + T(212, 33, 'mwb-core · always on · 36 MB private, measured', 'm b');
   const cell = (x, y, t, lines, cls = 'bx', h = 54) => LBOX(x, y, 124, h, t, lines, { cls, ty: 20, gap: 16, pad: 10 });
   b += cell(216, 48, 'Hotkeys', ['RegisterHotKey']) + cell(350, 48, 'Tray + toasts', ['state, consent']) + cell(484, 48, 'Event bus', ['in-process']);
-  b += cell(216, 114, 'Audio capture', ['mic · loopback', 'VAD, ring buffer'], 'bx-s', 64) + cell(350, 114, 'Sensors', ['meeting detector', 'activity sampler'], 'bx', 64) + cell(484, 114, 'Collectors', ['git', 'Outlook COM'], 'bx', 64);
+  b += cell(216, 114, 'Audio capture', ['mic · loopback', 'VAD, pre-roll'], 'bx-s', 64) + cell(350, 114, 'Sensors', ['meeting detector', 'activity sampler'], 'bx', 64) + cell(484, 114, 'Collectors', ['git', 'Outlook COM'], 'bx', 64);
   b += RECT(216, 190, 392, 116, 'bx-w') + T(228, 210, 'Skills', 'h');
   ['Dictate', 'Rewrite by voice', 'Email', 'Code', 'Meeting notes', 'Daily journal'].forEach((s, i) => {
     const x = 228 + (i % 3) * 126, y = 222 + Math.floor(i / 3) * 40;
@@ -164,16 +164,18 @@ export function figBlocks() {
   b += LBOX(216, 398, 392, 76, 'Storage', ['SQLite (WAL, FTS5) · journal/*.md', 'temporary audio, deleted after transcription'], { cls: 'bx', ty: 20, gap: 17, pad: 10 });
   // workers
   b += RECT(670, 14, 210, 300, 'rg-d') + T(682, 33, 'workers · on demand', 'm b');
-  b += LBOX(682, 46, 186, 82, 'Speech worker', ['Parakeet 0.6B int8', 'whisper.cpp (Hindi)', '~1.0 GB · measured'], { cls: 'bx-c', ty: 20, gap: 16, pad: 10 });
-  b += LBOX(682, 138, 186, 82, 'Language worker', ['llama-server · fallback', 'Qwen3.5 2B or 4B', '1.3–2.4 GB · measured'], { cls: 'bx-c', ty: 20, gap: 16, pad: 10 });
-  b += LBOX(682, 230, 186, 70, 'Diarizer (later)', ['Sortformer · ONNX', 'up to 4 speakers'], { cls: 'bx-w', ty: 20, gap: 16, pad: 10 });
+  // Rev G: meetings use whisper-cli once per piece, a process of its own, instead of the speech worker
+  b += LBOX(682, 44, 186, 66, 'Speech worker', ['Parakeet int8 · dictation', '~1.0 GB · measured'], { cls: 'bx-c', ty: 20, gap: 16, pad: 10 });
+  b += LBOX(682, 116, 186, 66, 'whisper-cli, per piece', ['whisper small · meetings', '0.79 GB peak · measured'], { cls: 'bx-c', ty: 20, gap: 16, pad: 10 });
+  b += LBOX(682, 188, 186, 66, 'Language worker', ['llama-server · fallback', '1.3–2.4 GB · measured'], { cls: 'bx-c', ty: 20, gap: 16, pad: 10 });
+  b += LBOX(682, 260, 186, 44, 'Diarizer (later)', ['Sortformer · ONNX'], { cls: 'bx-w', ty: 20, gap: 16, pad: 10 });
   b += RECT(670, 328, 210, 56, 'rg-d') + T(682, 351, 'Cloud LLM (default)', 'h') + T(682, 368, 'Groq · text only', 'm mid');
   // core <-> workers
   b += ARR([[620, 92], [668, 92]], 'ln-c') + ARR([[668, 104], [620, 104]], 'ln-c') + T(644, 84, 'HTTP', 'm dim', 'middle');
   b += ARR([[620, 356], [668, 356]], 'ln') + T(644, 348, 'HTTPS', 'm dim', 'middle');
   // outputs
   b += T(682, 418, 'outputs', 'm b');
-  const outs = ['Text at cursor', 'Result cards (email, code)', 'Today page (on demand)', 'Outlook drafts (never sent)'];
+  const outs = ['Text at cursor', 'Result panel (email, code)', 'Today page (on demand)', 'Outlook drafts (never sent)'];
   b += LINE(620, 470, 646, 470, 'ln') + LINE(646, 447, 646, 573, 'ln');
   outs.forEach((o, i) => { const y = 430 + i * 42; b += ARR([[646, y + 17], [668, y + 17]], 'ln') + RECT(670, y, 210, 34, 'bx') + T(682, y + 21.5, o, 's'); });
   return wrap('fig-blocks', 880, 600, 'Functional block diagram: inputs on the left, the always-on core in the middle, on-demand workers and outputs on the right', b, 760);
@@ -188,8 +190,8 @@ export function figDict() {
     .forEach(([t, y]) => { b += T(0, y + 17, t, 'h'); });
   b += T(sx(0), 22, 'key down', 'm dim', 'middle') + T(sx(6), 22, 'release', 'm dim', 'middle');
   b += LINE(sx(6), 28, sx(6), 246, 'ln-d');
-  b += RECT(sx(0), lane.keys, sx(6) - sx(0), lh, 'bx-c') + T(sx(3), lane.keys + 17, 'Ctrl+Alt+Space held', 'm', 'middle');
-  b += RECT(sx(0), lane.mic, sx(6) - sx(0), lh, 'bx-s') + T(sx(3), lane.mic + 17, 'recording 16 kHz mono into a ring buffer', 'm', 'middle');
+  b += RECT(sx(0), lane.keys, sx(6) - sx(0), lh, 'bx-c') + T(sx(3), lane.keys + 17, 'push-to-talk held (Ctrl+Alt+Space, or Ctrl+Shift+Alt+Space)', 'm', 'middle');
+  b += RECT(sx(0), lane.mic, sx(6) - sx(0), lh, 'bx-s') + T(sx(3), lane.mic + 17, 'mic open at its own rate (48 kHz here), pre-roll keeps the first sound', 'm', 'middle');
   b += RECT(sx(0.3), lane.seg, sx(3.2) - sx(0.3), lh, 'bx') + T((sx(0.3) + sx(3.2)) / 2, lane.seg + 17, 'segment 1 · 2.9 s', 'm', 'middle');
   b += T((sx(3.2) + sx(3.9)) / 2, lane.seg + 17, 'pause', 'm dim', 'middle');
   b += RECT(sx(3.9), lane.seg, sx(6) - sx(3.9), lh, 'bx') + T((sx(3.9) + sx(6)) / 2, lane.seg + 17, 'segment 2 · 2.1 s', 'm', 'middle');
@@ -202,7 +204,7 @@ export function figDict() {
   b += T(sx(6.6) - 8, lane.out + 17, 'clean-up rules + paste, text appears', 'm', 'end');
   b += LINE(sx(6), 252, sx(tOut), 252, 'ln-s') + LINE(sx(6), 247, sx(6), 257, 'ln-s') + LINE(sx(tOut), 247, sx(tOut), 257, 'ln-s');
   b += T((sx(6) + sx(tOut)) / 2, 268, '≈ 0.65 s after release', 'h ts', 'middle');
-  b += RECT(sx(0), lane.cold, 7.5 * 90, lh, 'rg-d') + T(sx(0) + 10, lane.cold + 17, 'if cold: model load (7.5 s, measured) starts at key down and runs while you talk', 'm mid');
+  b += RECT(sx(0), lane.cold, 7.5 * 90, lh, 'rg-d') + T(sx(0) + 10, lane.cold + 17, 'if cold: model load starts at key down (7.5 s with memory free, 17–40 s when tight)', 'm mid');
   b += LINE(x0, 314, x1, 314, 'axis');
   for (let t = 0; t <= tmax; t++) b += LINE(sx(t), 314, sx(t), 319, 'axis') + T(sx(t), 333, `${t} s`, 'm dim', 'middle');
   return wrap('fig-dict', 880, 340, 'Dictation timeline: segment 1 is transcribed while speaking, about 0.65 seconds from release to text', b, 700);
@@ -221,23 +223,24 @@ export function figMtg() {
   b += TL(0, 70, ['DURING', 'THE CALL'], 'm b mid');
   b += row(40, [
     ['Detect', 'any VC app on mic', '+ calendar match', 'bx'],
-    ['Record 2 lanes', 'Me = microphone', 'Them = loopback', 'bx-s'],
-    ['Segment', 'VAD, ≤ 10 s each', 'echo de-dup', 'bx'],
-    ['Transcribe', 'Parakeet int8', '2 thr · low prio', 'bx-c'],
+    ['Record 2 lanes', 'You = microphone', 'Them = loopback', 'bx-s'],
+    // Rev G: whisper small through whisper-cli, in 22-28 s pieces (whisper always works on a 30 s window)
+    ['Pieces', '22–28 s each', 'WAV, temporary', 'bx'],
+    ['Transcribe', 'whisper small', '2 thr · low prio', 'bx-c'],
     ['Store', 'segments + times', 'SQLite, FTS5', 'bx'],
   ]);
-  b += T(x0 + slot, 134, 'CPU above 80 % for 30 s: queue audio to disk, catch up after the call', 'm dim');
+  b += T(x0 + 4, 134, 'Live only on mains power with a calm CPU; otherwise pieces wait on disk until the call ends', 'm dim');
   const xl = x0 + 4 * slot + bw / 2, xf = x0 + bw / 2;
   b += ARR([[xl, 112], [xl, 160], [xf, 160], [xf, 198]], 'ln');
   b += TL(0, 230, ['AFTER', 'THE CALL'], 'm b mid');
   b += row(200, [
-    ['Merge', 'Me + Them lanes', 'one timeline', 'bx'],
+    ['Merge', 'You + Them lanes', 'echo removed', 'bx'],
     ['Map', 'notes for each', '10-min chunk', 'bx-c'],
     ['Reduce', 'summary + actions', 'decisions, owners', 'bx-c'],
     ['Classify', 'Work / Timepass', 'see §10', 'bx-a'],
-    ['Notify', 'toast + Today', 'feeds the journal', 'bx'],
+    ['Notify', 'notice + Today', 'feeds the journal', 'bx'],
   ]);
-  return wrap('fig-mtg', 880, 284, 'Meeting pipeline: detect, record two lanes, segment, transcribe, store during the call; merge, map, reduce, classify, notify after it', b, 720);
+  return wrap('fig-mtg', 880, 284, 'Meeting pipeline: detect, record two lanes, cut pieces, transcribe with whisper small, store during the call; merge, map, reduce, classify, notify after it', b, 720);
 }
 
 // Figure 9.3 ------------------------------------------------------------------------------------
@@ -424,34 +427,27 @@ export function figEr() {
     return s;
   };
   const rowY = (y, i) => y + 40 + i * 15; // vertical centre of field row i
+  // Rev G: the tables as built in Phases 1 to 3 (mwb/store/schema.sql); the journal's tables follow in Phase 4.
   let b = '';
-  b += tbl(0, 0, 'segments', ['id', 'meeting_id → meetings', 'lane  me | them', 'speaker', 't0_ms, t1_ms', 'text', 'engine']);
-  b += tbl(0, 161, 'action_items', ['id', 'meeting_id → meetings', 'owner  me | name', 'text', 'due_date', 'done']);
-  b += tbl(0, 307, 'feedback', ['id', 'meeting_id → meetings', 'from_label, to_label', 'ts']);
-  b += tbl(305, 0, 'meetings', ['id', 'title, organizer', 'attendees_json', 'started_at, ended_at', 'platform', 'label, subtype', 'confidence', 'label_source  rules | llm | you', 'work_min, timepass_min', 'my_talk_s, their_talk_s', 'summary_md, status'], 'bx-c');
-  b += tbl(305, 240, 'events', ['id', 'ts_start, ts_end', 'kind', 'ref_id → meetings | …', 'project_id → projects', 'summary']);
-  b += tbl(610, 0, 'projects', ['id', 'name', 'repo_paths', 'title_patterns']);
-  b += tbl(610, 116, 'activity', ['id', 'ts_start, ts_end', 'app, window_title', 'project_id → projects', 'idle']);
-  b += tbl(610, 247, 'commits', ['sha', 'repo, branch', 'ts', 'message', 'insertions, deletions', 'files']);
-  b += tbl(0, 440, 'dictations', ['id', 'ts, app', 'raw_text', 'final_text', 'latency_ms']);
-  b += tbl(305, 440, 'emails', ['id', 'ts, direction', 'subject', 'counterpart', 'outlook_entry_id']);
-  b += tbl(610, 440, 'journal', ['date', 'facts_json', 'narrative_md', 'model, generated_at', 'edited_md']);
+  b += tbl(0, 0, 'segments', ['id', 'meeting_id → meetings', 'speaker  You | Them | name', 'start_s, end_s', 'text  (FTS5 search)']);
+  b += tbl(0, 130, 'action_items', ['id', 'meeting_id → meetings', 'owner  You | name', 'what', 'due_text  as said', 'due_date  worked out by code', 'done']);
+  b += tbl(0, 290, 'meeting_labels', ['meeting_id → meetings', 'label, subtype, confidence', 'work_min, timepass_min', 'reasons', 'stage  A | B | C', 'model_label, series']);
+  b += tbl(305, 0, 'meetings', ['id', 'app_id, app_name', 'title', 'started, ended', 'status  recording | … | ready', 'source  recorded | imported', 'language', 'pieces, pieces_done', 'camera'], 'bx-c');
+  b += tbl(305, 205, 'meeting_notes', ['meeting_id → meetings', 'status  waiting | ready | failed', 'summary, decisions', 'chunks  10-minute parts', 'route, model']);
+  b += tbl(610, 0, 'dictations', ['id', 'ts, app  (never the title)', 'raw_text, final_text  (FTS5)', 'latency_ms, audio_s, pieces', 'trigger, inserted_by']);
+  b += tbl(610, 130, 'app_policy', ['app_id', 'policy  record | ask | never', 'decided']);
+  b += tbl(610, 230, 'api_log', ['id, ts, skill', 'route  api | local, model', 'chars_in, chars_out  (sizes only)', 'seconds, ok']);
   // foreign keys into meetings.id
   const mId = rowY(0, 0);
-  [rowY(0, 1), rowY(161, 1), rowY(307, 1)].forEach((y) => { b += LINE(270, y, 287, y, 'ln-c'); });
-  b += LINE(287, mId, 287, rowY(307, 1), 'ln-c') + ARR([[287, mId], [303, mId]], 'ln-c');
-  // events.ref_id → meetings (dashed: only when kind = meeting)
-  b += ARR([[440, 240], [440, 205]], 'ln-d') + T(448, 226, 'kind = meeting', 'm dim');
-  // project_id → projects.id
-  const pId = rowY(0, 0);
-  b += LINE(575, rowY(240, 4), 592, rowY(240, 4), 'ln-c') + LINE(610, rowY(116, 3), 592, rowY(116, 3), 'ln-c');
-  b += LINE(592, pId, 592, rowY(240, 4), 'ln-c') + ARR([[592, pId], [608, pId]], 'ln-c');
-  // dictations, emails, journal link to events through ref_id or date
-  b += ARR([[135, 440], [135, 416], [420, 416], [420, 370]], 'ln-d');
-  b += ARR([[440, 440], [440, 370]], 'ln-d');
-  b += ARR([[745, 440], [745, 416], [460, 416], [460, 370]], 'ln-d');
-  b += T(470, 404, 'ref_id / date', 'm dim');
-  return wrap('fig-er', 880, 560, 'Entity relationship diagram of the MWB database', b, 760);
+  [rowY(0, 1), rowY(130, 1), rowY(290, 0)].forEach((y) => { b += LINE(270, y, 287, y, 'ln-c'); });
+  b += LINE(287, mId, 287, rowY(290, 0), 'ln-c') + ARR([[287, mId], [303, mId]], 'ln-c');
+  b += ARR([[440, 205], [440, 175]], 'ln-c');
+  // Phase 4, not built yet
+  b += T(0, 438, 'Phase 4 adds the journal\'s tables (not built yet):', 'm b');
+  b += tbl(0, 448, 'events', ['ts_start, ts_end, kind', 'ref_id → meetings | …', 'project_id → projects'], 'bx-w');
+  b += tbl(305, 448, 'commits · activity · emails', ['sha, repo, branch, ts, message', 'app, window title, idle', 'subject, counterpart'], 'bx-w');
+  b += tbl(610, 448, 'journal · projects', ['date, facts_json', 'narrative_md, edited_md', 'repo_paths, title_patterns'], 'bx-w');
+  return wrap('fig-er', 880, 540, 'Entity relationship diagram of the MWB database as built in Phases 1 to 3, with the Phase 4 tables below', b, 760);
 }
 
 // Figure 17.1 -----------------------------------------------------------------------------------
@@ -461,10 +457,11 @@ export function figPlan() {
   // Rev D: P1 +1 (double-tap Caps, indicator), P3 +1 (answer mode), P5 +1 (skins and indicator settings).
   const x0 = 222, x1 = 840, dmax = 48, sx = (d) => x0 + (d / dmax) * (x1 - x0);
   const rows = [
-    ['P0', 'Spikes & calibration', 0, 3, 'measure before building'],
-    ['P1', 'Dictation MVP', 3, 11, 'M1 · Wispr Flow can be switched off'],
-    ['P2', 'Meeting capture', 11, 20, 'M2 · auto-recorded calls in any VC app'],
-    ['P3', 'Understanding', 20, 30, 'M3 · notes, labels, answers, email, code'],
+    // Rev G: status on 16 Oct. P1 to P3 were built on 14 Oct; their checks with real use are still open.
+    ['P0', 'Spikes & calibration', 0, 3, 'measure before building · 4 of 8 tests finished'],
+    ['P1', 'Dictation MVP', 3, 11, 'M1 · Wispr Flow can be switched off · built 14 Oct'],
+    ['P2', 'Meeting capture', 11, 20, 'M2 · auto-recorded calls in any VC app · built 14 Oct'],
+    ['P3', 'Understanding', 20, 30, 'M3 · notes, labels, answers, email, code · built 14 Oct'],
     ['P4', 'Daily journal', 30, 37, 'M4 · first automatic journal'],
     ['P5', 'Profiles & effort', 37, 48, 'M5 · POC sign-off'],
   ];
@@ -572,17 +569,17 @@ export function figTap() {
   b += ARR([[110, 120], [158, 120]], 'ln-c') + T(134, 110, '2× Caps', 'm tc b', 'middle');
   b += LBOX(160, 85, 160, 70, 'Listening', ['mic on, worker warms', 'pieces transcribed'], { cls: 'bx-c' });
   b += ARR([[320, 120], [368, 120]], 'ln') + T(344, 76, '2× Caps or 2 s pause', 'm dim', 'middle');
-  b += LBOX(370, 85, 140, 70, 'Finish', ['last piece ~0.7 s', 'clean-up rules'], {});
+  b += LBOX(370, 85, 140, 70, 'Finish', ['text in ~1 s', 'clean-up rules'], {});
   b += ARR([[510, 120], [544, 120]], 'ln');
   b += '<polygon points="546,120 600,74 654,120 600,166" class="bx"/>' + TL(600, 108, ['text box', 'focused, no', 'wake word?'], 'm', 'middle', 13);
   b += ARR([[654, 120], [676, 120], [676, 50], [698, 50]], 'ln') + T(681, 96, 'yes', 'm dim');
   b += LBOX(700, 20, 180, 60, 'Write', ['paste at the cursor', 'indicator shows done'], { tcls: 'h tc', ty: 20, gap: 16 });
   b += ARR([[600, 166], [600, 190], [698, 190]], 'ln') + T(608, 184, 'no', 'm dim');
-  b += LBOX(700, 160, 180, 60, 'Answer', ['card with the reply', 'API, or local fallback'], { tcls: 'h tc', ty: 20, gap: 16 });
+  b += LBOX(700, 160, 180, 60, 'Answer', ['panel above the pill', 'API, or local fallback'], { tcls: 'h tc', ty: 20, gap: 16 });
   b += ARR([[790, 20], [790, 8], [55, 8], [55, 93]], 'ln-d') + T(420, 23, 'back to idle', 'm dim', 'middle');
   b += ARR([[790, 220], [790, 238], [55, 238], [55, 147]], 'ln-d') + T(420, 232, 'back to idle', 'm dim', 'middle');
   b += ARR([[240, 155], [240, 205], [90, 205], [90, 147]], 'ln-d') + T(165, 221, 'Esc: cancel', 'm dim', 'middle');
-  return wrap('fig-tap', 880, 250, 'One round: double-tap Caps Lock to listen, finish with another double tap or a pause, then MWB writes at the cursor or answers in a card', b, 720);
+  return wrap('fig-tap', 880, 250, 'One round: double-tap Caps Lock to listen, finish with another double tap or a pause, then MWB writes at the cursor or answers in a panel above the indicator', b, 720);
 }
 
 // Figure 13.3 ----------------------------------------------------------------------------------
@@ -675,8 +672,38 @@ export function figSkins() {
   return wrap('fig-skins', 880, top + skins.length * rowH + 6, 'Eight indicator skins, each shown idle, listening, working and done', b, 720);
 }
 
+// Figure 13.4 ----------------------------------------------------------------------------------
+// The result panel in the indicator's place. The pill and panel keep their real dark colours in both themes.
+export function figPanel() {
+  const R = (x, y, w, h, rx, cls) => `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" rx="${f(rx)}" class="${cls}"/>`;
+  const C = (x, y, r, cls) => `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" class="${cls}"/>`;
+  const pill = (cx, cy, w, h) => R(cx - w / 2, cy - h / 2, w, h, h / 2, 'pnl');
+  const frames = [
+    ['1 · Working: three amber dots', (x, cy) => pill(x, cy, 110, 26) + [-12, 0, 12].map((d, i) => C(x + d, cy, 3, `f-ad ${['op35', 'op65', ''][i]}`)).join('')],
+    ['2 · The panel rises out of the pill', (x, cy) => {
+      const px = x - 120, py = 72, w = 240;
+      let s = R(px, py, w, 164, 14, 'pnl') + T(px + 14, py + 24, 'Reply draft', 'pnl-t b') + T(px + w - 18, py + 24, '×', 'pnl-d', 'middle');
+      s += TL(px + 14, py + 50, ['Hi Sam,', "I'll share the build by Wednesday.", 'I still need Kafka access for the', 'last test. Thanks!'], 'pnl-t', 'start', 17);
+      s += T(px + 14, py + 143, 'Esc to close', 'pnl-d');
+      s += R(px + w - 14 - 54, py + 128, 54, 22, 11, 'pnl-main') + T(px + w - 14 - 27, py + 143, 'Insert', 'pnl-w b', 'middle');
+      s += R(px + w - 14 - 54 - 8 - 46, py + 128, 46, 22, 11, 'pnl-chip') + T(px + w - 14 - 54 - 8 - 23, py + 143, 'Copy', 'pnl-t b', 'middle');
+      return s + pill(x, cy, 56, 12);
+    }],
+    ['3 · After Insert: a tick for 1.2 s', (x, cy) => pill(x, cy, 96, 26)
+      + `<polyline points="${f(x - 32)},${f(cy)} ${f(x - 28)},${f(cy + 4)} ${f(x - 20)},${f(cy - 5)}" class="o-okd cap"/>` + T(x - 12, cy + 4.5, 'Inserted', 'pnl-t b')],
+  ];
+  let b = '';
+  frames.forEach(([label, draw], i) => {
+    const x0 = i * 300, cx = x0 + 140;
+    b += T(x0, 16, label, 'm b');
+    b += R(x0, 28, 280, 252, 0, 'bx-w') + R(x0, 280, 280, 16, 0, 'tb');
+    b += draw(cx, 256);
+  });
+  return wrap('fig-panel', 880, 300, 'A result in the indicator\'s place: the pill works, the panel rises out of it with the buttons in its footer, and after Insert the pill shows a green tick', b, 720);
+}
+
 export const FIGS = {
   app: figApp, ram: figRam, lat: figLat, mem: figMem, blocks: figBlocks, dict: figDict, mtg: figMtg, jnl: figJnl,
   cls: figCls, life: figLife, day: figDay, tiers: figTiers, keys: figKeys, tray: figTray, er: figEr, plan: figPlan,
-  effort: figEffort, move: figMove, loop: figLoop, tap: figTap, skins: figSkins,
+  effort: figEffort, move: figMove, loop: figLoop, tap: figTap, skins: figSkins, panel: figPanel,
 };

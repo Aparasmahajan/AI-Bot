@@ -1,0 +1,12 @@
+# MWB's personal dictionary (design §9.1): what the speech engine writes -> what you want.
+# One rule per line. Matching ignores case and works on whole words. Add your own in %APPDATA%\MWB\dictionary.txt;
+# those win over these.
+#
+# Examples:
+#   preya -> Priya
+#   m t m s -> MTMS
+gpt oss -> gpt-oss
+git hub -> GitHub
+v s code -> VS Code
+vs code -> VS Code
+groq -> Groq

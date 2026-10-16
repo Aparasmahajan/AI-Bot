@@ -3,6 +3,7 @@
 <h2><span class="n">17</span>Plan</h2>
 <p class="lead">Six phases over about seven weeks. Each phase ends with a check you can run, and nothing moves on until that check passes. Estimates assume one developer working part-time with an AI coding assistant; double them for evenings only.</p>
 <p>Estimates move with scope, and Rev B re-estimated them. Covering every video-call app instead of Teams alone added two days to P2. The effort governor and automatic re-tuning on another laptop added two days to P5. Rev C added one more day to P5 for the setup screen where you choose the effort. Rev D added three days: one each for the double-tap trigger with the first indicator skin (P1), answer mode (P3), and the remaining skins with their settings (P5). Rev E changes no dates: an API check replaces the local bake-off in P0-4, and the router with its local fallback replaces the local-only language worker in P3.</p>
+<p><b>Rev G, status on 16 October.</b> Phases 1 to 3 were built on 14 October, much sooner than estimated, because Phase 0 had already proven the hard parts. Building is not passing, though: each phase below lists its exit checks with their status, and several need things only real use can give, such as your own voice, a week of calls, your first 20 labels or more free memory. Phase 0 has 4 of its 8 tests finished; the other 4 wait for a call, your voice or free memory. Phases 4 and 5 keep their estimates.</p>
 <figure class="fig">
   <div class="fig-frame">{{fig:plan}}</div>
   <figcaption><b>Figure 17.1</b>Timeline in calendar days. Diamonds are milestones. Phase 0 is short on purpose: measure first, then build.</figcaption>
@@ -16,11 +17,13 @@
       <li><b>P0-2</b> RegisterHotKey hold-to-talk with release detection; paste into Outlook, Teams, VS Code and Brave. Double-tap detection for Caps Lock and Alt by a 15 ms check: catch rate, false starts, and Caps Lock state restored.</li>
       <li><b>P0-3</b> Classic Outlook COM: read today's calendar and Sent Items subjects. Note any security prompt.</li>
       <li><b>P0-4</b> API and fallback: Groq response times from your network and answer quality on the MWB tasks, then the same tasks on the Qwen3.5 2B and 4B fallback with the llama.cpp already installed, CPU against Vulkan. This is the first sync check. Their speeds are already measured (§12.3).</li>
-      <li><b>P0-5</b> Mic-usage detection on real calls in Teams, Zoom, Google Meet in Brave, Webex and a Slack huddle. Confirm the exe and package names in <code>vc_apps.yaml</code>.</li>
+      <li><b>P0-5</b> Mic-usage detection on real calls in Teams, Zoom, Google Meet in Brave, Webex and a Slack huddle. Confirm the exe and package names in <code>vc_apps.toml</code>.</li>
       <li><b>P0-6</b> Hardware fingerprint and a first calibration run on this laptop, saved as the Lean baseline.</li>
       <li><b>P0-7</b> Your own voice: 20 work sentences recorded on your headset, through Parakeet and whisper. Word error rate against the 10 % limit in §7.2, plus Hinglish sentences if decision 5 needs them. The first benchmark used a synthetic voice, so it was a best case.</li>
+      <li><b>P0-8</b> Added on 13 October: can whisper small transcribe Hindi and Hinglish meetings fast enough during a call?</li>
     </ul>
     <p class="exit"><b>Exit</b>Numbers written to <code>docs/bench/</code>, a go or no-go for each choice, and the estimates in this document replaced by measured values. No colleague is recorded in Phase 0: call audio comes from test calls and played videos.</p>
+    <p class="exit"><b>Status</b>Finished: P0-2 go (50 of 50 double taps for each key), P0-3 go (no pop-up, also through comtypes), P0-6 done, P0-8 go on mains power (1.88× real time). Waiting: P0-1 has its technical go, and the 10-minute run during a call is left; P0-4 has its API half (42 of 42 checks), and the local half needs about 3.5 GB free, then your blind review; P0-5 has Teams confirmed, and the watch during more calls is left; P0-7 needs you to read 20 sentences. The numbers are in §6.5.</p>
   </div>
 </div>
 <div class="phase">
@@ -33,17 +36,19 @@
       <li>Indicator v1 with the Capsule skin and the double-tap Alt toggle.</li>
     </ul>
     <p class="exit"><b>Exit</b>Finish-to-text at most 1.0 s median for phrases up to 10 s; core at most 60 MB idle; worker exits after 15 idle minutes; works in five target apps; Caps Lock left unchanged after double taps; the indicator never takes focus. Wispr Flow can be switched off.</p>
+    <p class="exit"><b>Status</b>Built 14 Oct. Passed: finish-to-text 0.98 s median, core 25 MB private at idle, Caps Lock unchanged, the indicator never takes focus. Built but not yet timed: the 15-minute idle exit. Yours to try: the five apps, and switching Wispr Flow off. The 10 s joined phrases wait for free memory.</p>
   </div>
 </div>
 <div class="phase">
   <div><h4>P2 · Meeting capture</h4><p class="when">days 11–20</p></div>
   <div>
     <ul>
-      <li>App-agnostic meeting detector with <code>vc_apps.yaml</code>, browser tab matching, camera and calendar-link signals, and a recording policy per app.</li>
-      <li>Two-lane recorder, low-priority transcription in 10-second pieces, CPU back-off with a disk queue.</li>
+      <li>App-agnostic meeting detector with <code>vc_apps.toml</code>, browser tab matching, camera and calendar signals, and a recording policy per app.</li>
+      <li>Two-lane recorder, low-priority transcription with whisper small in pieces of 22–28 s (10 s in Rev F), live only on mains power with a calm CPU, and a disk queue for the rest.</li>
       <li>Storage of segments, transcript import for Teams, Zoom, Meet and Webex, a meeting list in the Today page.</li>
     </ul>
     <p class="exit"><b>Exit</b>Detects at least 95 % of a week's calls across every app you use; personal apps always ask; transcript ready within 2 minutes of the end; no audio kept unless asked.</p>
+    <p class="exit"><b>Status</b>Built 14 Oct. Passed in tests: personal apps always ask, no audio kept. Not yet: the transcript took 355 s in the end-to-end test, because only 0.4–0.8 GB was free; with enough memory about a minute is expected (estimate). Needs a week of your calls: the 95 % detection.</p>
   </div>
 </div>
 <div class="phase">
@@ -52,9 +57,10 @@
     <ul>
       <li>API client and router with the local fallback and the weekly sync check; meeting notes in two passes; action items with owners.</li>
       <li>Work/Timepass stages A to C; email explain and draft; code explain and optimise; rewrite by voice.</li>
-      <li>Answer mode: write-or-answer decision, wake word, answer card, lookups in your own data with citations.</li>
+      <li>Answer mode: write-or-answer decision, wake word, answer panel, lookups in your own data with citations.</li>
     </ul>
     <p class="exit"><b>Exit</b>Notes within 10 minutes of a 60-minute call; 80 % label agreement on your first 20 meetings; 10 questions about your day answered with correct facts; with the network off, every skill still answers through the fallback; no code path that sends mail.</p>
+    <p class="exit"><b>Status</b>Built 14 Oct. Passed: 10 of 10 day questions with correct facts, no code path that sends mail. Notes for a 15-minute test meeting took 3.0 s, so a 60-minute call should take well under a minute (estimate). Needs your first 20 meetings: the label agreement. Not yet run for real: the network-off test, which needs 1.25 GB free for the local model.</p>
   </div>
 </div>
 <div class="phase">
@@ -94,21 +100,22 @@
 <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead>
 <tbody>
 <tr><td>RAM pressure: 0.5 to 3 GB free on a normal day</td><td><span class="tag hi">High</span></td><td><span class="tag hi">High</span></td><td>Language work through the API, workers on demand, memory guard, Wispr Flow retired, second memory stick</td></tr>
-<tr><td>Company policy does not allow work text to go to an external API</td><td><span class="tag md">Medium</span></td><td><span class="tag hi">High</span></td><td>Check before using it on real meetings and mail; local-only skills; a company Azure OpenAI endpoint; the local fallback can run every skill, more slowly</td></tr>
+<tr><td>Company policy does not allow work text to go to an external API</td><td><span class="tag lo">Low</span></td><td><span class="tag hi">High</span></td><td>You said on 13 Oct that work text may go to Groq. Still: local-only skills, a company Azure OpenAI endpoint, and the local fallback can run every skill, more slowly</td></tr>
 <tr><td>API outage, rate limit or a retired model</td><td><span class="tag md">Medium</span></td><td><span class="tag md">Medium</span></td><td>Automatic local fallback, a queue, a second model in models.yaml. AI-App has already had to replace retired Groq models.</td></tr>
 <tr><td>Local fallback too slow when the API is down</td><td><span class="tag md">Medium</span></td><td><span class="tag lo">Low</span></td><td>Streaming output, rules-first clean-up, the 2B model for short text, second memory stick</td></tr>
 <tr><td>Company policy on recording and consent</td><td><span class="tag md">Medium</span></td><td><span class="tag hi">High</span></td><td>Visible indicator, ask before recording, per-app policy, platform transcript import, short retention, talk to IT first</td></tr>
 <tr><td>Endpoint security flags capture or hotkeys</td><td><span class="tag md">Medium</span></td><td><span class="tag hi">High</span></td><td>No keyboard hook, honest name and icon, user mode, no hidden windows, a signed build later</td></tr>
-<tr><td>Hinglish meetings: Parakeet v2 is English only</td><td><span class="tag md">Medium</span></td><td><span class="tag md">Medium</span></td><td>Per-meeting language setting, whisper multilingual in batch, evaluate Qwen3-ASR, dictionary for names</td></tr>
+<tr><td>Hindi and Hinglish meetings: Parakeet v2 is English only</td><td><span class="tag hi">High</span></td><td><span class="tag md">Medium</span></td><td>Happened: your meetings use both. Every meeting now goes through whisper small, live on mains power and after the call on battery (P0-8); a per-meeting language setting; evaluate Qwen3-ASR later</td></tr>
+<tr><td>Meeting transcription waits for memory: whisper needs 0.8 GB free</td><td><span class="tag hi">High</span></td><td><span class="tag md">Medium</span></td><td>Seen on 14 Oct (355 s to the transcript). Pieces wait on disk, so nothing is lost; switching Wispr Flow off frees 1.5 GB; the second memory stick</td></tr>
 <tr><td>Loopback quirks: Bluetooth headsets drop to 16 kHz call mode, devices change mid-call</td><td><span class="tag md">Medium</span></td><td><span class="tag md">Medium</span></td><td>Device-change handling, reopen streams, a notification when quality drops</td></tr>
 <tr><td>New Outlook replaces classic, which removes COM</td><td><span class="tag md">Medium</span></td><td><span class="tag md">Medium</span></td><td>Selected-text path works everywhere; Graph connection later</td></tr>
 <tr><td>Invented facts in the journal</td><td><span class="tag md">Medium</span></td><td><span class="tag hi">High</span></td><td>Facts rendered by code, citation validator, SHA check against git</td></tr>
-<tr><td>Browser meetings: the mic key names only the browser, not the site</td><td><span class="tag md">Medium</span></td><td><span class="tag md">Medium</span></td><td>Tab-title matching through UI Automation, the calendar's meeting link, ask when unsure</td></tr>
+<tr><td>Browser meetings: the mic key names only the browser, not the site</td><td><span class="tag md">Medium</span></td><td><span class="tag md">Medium</span></td><td>Window titles now, which show only the tab in front; every tab through UI Automation later; the calendar's subject; ask when unsure</td></tr>
 <tr><td>A personal call recorded by mistake</td><td><span class="tag lo">Low</span></td><td><span class="tag hi">High</span></td><td>Personal apps always ask, unknown apps ask once, one key stops and deletes the recording</td></tr>
 <tr><td>Auto-tuning picks a profile too big for a new machine</td><td><span class="tag lo">Low</span></td><td><span class="tag md">Medium</span></td><td>Calibration measures instead of guessing, the memory guard still applies, and the governor drops a level under pressure</td></tr>
-<tr><td>Double taps missed, or fired by accident while typing</td><td><span class="tag md">Medium</span></td><td><span class="tag lo">Low</span></td><td>Tunable timing, Caps Lock state restored, other gestures in Settings, a two-key hook as fallback after checking with IT</td></tr>
+<tr><td>Double taps missed, or fired by accident while typing</td><td><span class="tag lo">Low</span></td><td><span class="tag lo">Low</span></td><td>P0-2 caught 50 of 50 for each key; the false-start check during a normal day is still to do. Tunable timing, Caps Lock state restored, other gestures in Settings</td></tr>
 <tr><td>A single Alt tap opens menus or key tips in some apps</td><td><span class="tag lo">Low</span></td><td><span class="tag lo">Low</span></td><td>The second tap closes them; or pick double Right Ctrl or Ctrl+Alt+I</td></tr>
-<tr><td>Hotkey conflicts with Teams, VS Code or other tools</td><td><span class="tag md">Medium</span></td><td><span class="tag lo">Low</span></td><td>Configurable keys, fallbacks, conflict log</td></tr>
+<tr><td>Hotkey conflicts with Teams, VS Code or other tools</td><td><span class="tag md">Medium</span></td><td><span class="tag lo">Low</span></td><td>Happened once: another app owns Ctrl+Alt+Space, so the fallback Ctrl+Shift+Alt+Space is used. Configurable keys, fallback lists, conflict log</td></tr>
 <tr><td>Battery drain and heat</td><td><span class="tag md">Medium</span></td><td><span class="tag lo">Low</span></td><td>Batch work waits for AC power, thread caps, below-normal priority</td></tr>
 </tbody></table></div>
 </section>
@@ -118,14 +125,14 @@
 <p class="lead">These change what gets built. Each has a default, so work can start before you answer.</p>
 <ol class="decide">
   <li><div><b>Ask IT for a second 16 GB DDR4-3200 stick?</b> With language work on the API it matters less, but it is still the largest speed-up for the local fallback and for meetings.<span class="def">Default: plan for Lean; switch to Balanced if it arrives.</span></div></li>
-  <li><div><b>Cloud language model.</b> Decided on 12 October: API first, Groq as in AI-App, with the local model kept in sync. Still open: whether your company allows work text to go to it.<span class="def">Now: API first, local fallback.</span></div></li>
+  <li><div><b>Cloud language model.</b> Decided on 12 October: API first, Groq as in AI-App, with the local model kept in sync. On 13 October you said work text may go to Groq.<span class="def">Decided: API first, local fallback.</span></div></li>
   <li><div><b>Meeting capture scope.</b> Both lanes, only your own mic (no consent question for others), or importing the platform's own transcript only.<span class="def">Default: both lanes, with ask-before-recording, after checking policy.</span></div></li>
-  <li><div><b>Which Outlook do you use day to day?</b> Classic (COM works) or new Outlook and Outlook on the web.<span class="def">Default: classic through COM, with the selected-text path as a fallback.</span></div></li>
-  <li><div><b>How much Hindi or Hinglish is in your meetings?</b> This decides whether multilingual speech is in the POC.<span class="def">Default: English in the POC, Hindi as a batch option.</span></div></li>
+  <li><div><b>Which Outlook do you use day to day?</b> Decided on 13 October: classic Outlook, which holds your meeting calendar, and MWB may start it. Your work email is separate: it is on Microsoft 365 and only in Outlook on the web, in an Edge work profile. Still open: how MWB may read your sent work mail for the journal and the style card. Add the account to classic Outlook, ask its admin for a Microsoft Graph sign-in, or leave email out.<span class="def">Now: the calendar through COM; email from selected text.</span></div></li>
+  <li><div><b>How much Hindi or Hinglish is in your meetings?</b> Decided on 13 October: your meetings use both. Meetings go through whisper small, live on mains power and after the call on battery; dictation stays on Parakeet.<span class="def">Decided: whisper small for every meeting.</span></div></li>
   <li><div><b>Retire Wispr Flow once Phase 1 passes?</b><span class="def">Default: yes. It frees 1.5 GB.</span></div></li>
   <li><div><b>Who receives the end-of-day report?</b> Only you, or a draft addressed to your manager.<span class="def">Default: only you, saved as Markdown.</span></div></li>
-  <li><div><b>Which video-call apps do you use, and which count as personal?</b><span class="def">Default: detect every app; WhatsApp, Discord, Telegram and Phone Link are personal and always ask.</span></div></li>
-  <li><div><b>Which skills use the API?</b> Decided on 12 October: every language skill except learning your email style, which runs locally. Speech never does. You can set any skill to local-only.<span class="def">Now: all language skills except email style.</span></div></li>
+  <li><div><b>Which video-call apps do you use, and which count as personal?</b> You said on 13 October: Teams, and MWB must be ready for any call app.<span class="def">Default: detect every app; WhatsApp, Discord, Telegram and Phone Link are personal and always ask.</span></div></li>
+  <li><div><b>Which skills use the API?</b> Decided on 12 October: every language skill except learning your email style, which runs locally. Speech never does. You can set any skill to local-only. From P0-4: <code>gpt-oss-120b</code> on low reasoning, and <code>gpt-oss-20b</code> only for labels, clean-up and short answers.<span class="def">Now: all language skills except email style.</span></div></li>
   <li><div><b>What should a new device pre-select on its setup screen?</b> The suggestion for that machine, the highest level it can run, or battery saver.<span class="def">Default: the suggestion (<code>effort_preference = "suggested"</code>); you confirm on every device.</span></div></li>
 </ol>
 </section>
@@ -161,6 +168,8 @@
   <div><dt>Double tap</dt><dd>Two quick presses of the same key within 350 ms: Caps Lock to talk or ask, Alt to show or hide the indicator.</dd></div>
   <div><dt>Indicator</dt><dd>The small floating icon at the bottom of the screen that shows what MWB is doing, like Wispr Flow's pill.</dd></div>
   <div><dt>Wake word</dt><dd>A word you start with, "MWB" by default, to make MWB answer instead of typing what you say.</dd></div>
+  <div><dt>Pre-roll</dt><dd>A short stretch of audio, 0.4 s in MWB, kept from just before the speech starts, so the first sound of the first word isn't cut off.</dd></div>
+  <div><dt>whisper-cli</dt><dd>whisper.cpp's command-line program. MWB starts it once for each piece of meeting audio; when it exits, its memory goes back to Windows.</dd></div>
   <div><dt>Event loop</dt><dd>The part of the core that sleeps until something happens, handles it in microseconds, and goes back to sleep.</dd></div>
 </dl>
 </section>
@@ -173,6 +182,8 @@
   <li>Benchmarks run in this session against AI-App's own engines. Scripts and raw results are copied to <code>MWB\docs\bench\</code>.</li>
   <li>AI-App source: <code>CLAUDE.md</code>, <code>docs/ARCHITECTURE.md</code>, <code>addon/parakeet/server.py</code>, <code>src/main.js</code>, <code>src/renderer/app.js</code>, <code>scripts/setup-addon.ps1</code>.</li>
   <li>AI-App's provider list and its notes on retired Groq models, in <code>src/renderer/app.js</code>, last checked by AI-App on 22 August 2026.</li>
+  <li>Phase 0 results from 12 to 14 October 2026, in <code>docs/bench/P0-RESULTS-2026-10-12.md</code>, with the scripts beside them.</li>
+  <li>Phase 1 to 3 measurements from 14 October 2026: <code>tests/bench_dictation.py</code>, <code>tests/e2e_meeting.py</code>, <code>tests/e2e_answers.py</code> and the status in <code>TODO.md</code>. The as-built details in Rev G were checked against MWB's code on 16 October.</li>
 </ul>
 <h3><span class="n">21.2</span>Published</h3>
 <ul class="srcs">
@@ -199,9 +210,10 @@
 <tr><td class="mono">D</td><td class="mono nw">12 Oct 2026</td><td>The running loop explained (§8.6, Figures 8.2 and 8.3); double-tap Caps Lock to talk, with MWB deciding to write or answer; answer mode (§9.7); on-screen indicator with eight skins and a double-tap Alt toggle (§13.3, Figure 13.3); plan now 48 days. Phase 0 adds a test on your own voice (P0-7).</td></tr>
 <tr><td class="mono">E</td><td class="mono nw">12 Oct 2026</td><td>Language work goes through an API key for now (Groq, as in AI-App), with a local model kept in sync as the fallback (§12.7). §4.4 corrected: llama.cpp (build 11015), LM Studio and three Qwen2.5 models were already installed, so Phase 0 downloads no model and no program, only two Python libraries of 0.4 MB (§16.5); uv is dropped, and comtypes (0.3 MB) replaces pywin32 (7 MB). whisper small found on the laptop, checked against Hugging Face and measured (§6.3). On the API route MWB averages 0.40 GB and peaks at 1.17 GB (Figure 11.2).</td></tr>
 <tr><td class="mono">F</td><td class="mono nw">12 Oct 2026</td><td>The local fallback is now Qwen3.5: the 2B every day and the 4B for code and the journal, with thinking off. Both were downloaded, checked against Hugging Face and measured (§12.3, §12.4). Qwen2.5 was deleted for good, at your request. whisper large-v3-turbo was downloaded and measured; it is slower than real time on this CPU (§6.3). Vulkan reads prompts 5 to 7 times faster than the CPU here. An interactive demo of the UI was added and is linked from §3.</td></tr>
+<tr><td class="mono">G</td><td class="mono nw">16 Oct 2026</td><td>The design now matches the code built on 14 October (Phases 1 to 3), and Phase 0's measured numbers replace estimates (new §6.5; §7.2). Decisions of 13 October: meetings go through whisper small, live only on mains power (P0-8); classic Outlook for the calendar, with work email only on the web; work text may go to Groq; any call app. Changes from the plan: whisper-cli once per piece instead of whisper-server (0.79 GB against 2.2 GB), pieces of 22–28 s instead of 10 s, <code>vc_apps.toml</code> instead of YAML, temporary WAV instead of Opus, push-to-talk on Ctrl+Shift+Alt+Space on this laptop, the clipboard put back after 400 ms instead of 300, a 20 s API timeout instead of 10, results in a panel that rises out of the indicator, as the plan intended (the first build put them near the mouse pointer), and a paste that also waits for Shift. Figures 8.1, 8.3, 9.1, 9.2, 14.1 and 17.1 updated, and Figure 13.4 added. What is not built yet is marked in each section.</td></tr>
 </tbody></table></div>
 
-<div class="foot"><span>MWB-POC-001 · Rev F</span><span>Measured numbers: 11–12 Oct 2026 · HP EliteBook 840 G8</span><span>End of document</span></div>
+<div class="foot"><span>MWB-POC-001 · Rev G</span><span>Measured numbers: 11–14 Oct 2026 · HP EliteBook 840 G8</span><span>End of document</span></div>
 </section>
 
 </div>
