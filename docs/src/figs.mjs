@@ -245,24 +245,29 @@ export function figMtg() {
 
 // Figure 9.3 ------------------------------------------------------------------------------------
 export function figJnl() {
+  // Rev G, as built (skills/journal.py): there is no event store. collect() reads MWB's tables and asks git and
+  // Outlook afresh; facts_text() tags each fact; render() writes the tables from the facts, and the model's prose
+  // joins them only after check_sentence(). Sent mail is off until decision 4.
   let b = '';
-  ['Git commits', 'Meeting notes', 'Outlook mail', 'Dictation + notes', 'Active window', 'Calendar'].forEach((c, i) => {
-    const y = 22 + i * 44;
-    b += RECT(0, y, 150, 34, 'bx') + T(12, y + 21.5, c, 's') + LINE(150, y + 17, 172, y + 17, 'ln');
-  });
-  b += LINE(172, 39, 172, 259, 'ln') + ARR([[172, 150], [198, 150]], 'ln');
-  b += LBOX(200, 104, 130, 92, 'Event store', ['SQLite timeline', 'one row per fact'], { cls: 'bx-w' });
-  b += LINE(330, 150, 352, 150, 'ln') + LINE(352, 92, 352, 214, 'ln');
-  b += ARR([[352, 92], [374, 92]], 'ln') + LBOX(376, 52, 178, 80, 'Facts, by code', ['commit table, SHAs,', 'durations, counts'], {});
-  b += ARR([[352, 214], [374, 214]], 'ln-c') + LBOX(376, 174, 178, 80, 'Narrative, by LLM', ['summary, per project,', 'blockers, tomorrow'], { cls: 'bx-c' });
-  b += LINE(554, 92, 576, 92, 'ln') + LINE(554, 214, 576, 214, 'ln') + LINE(576, 92, 576, 214, 'ln');
-  b += ARR([[576, 153], [596, 153]], 'ln') + LBOX(598, 104, 140, 98, 'Validator', ['every sentence', 'cites an event;', 'SHAs re-checked'], {});
-  b += LINE(738, 153, 758, 153, 'ln') + LINE(758, 86, 758, 220, 'ln');
+  [['Git commits'], ['Meetings + notes'], ['Window → project'], ['Dictation, notes'], ['Sent mail (off)', true], ['Tomorrow\'s calendar']]
+    .forEach(([c, off], i) => {
+      const y = 22 + i * 44;
+      b += RECT(0, y, 150, 34, off ? 'bx-w' : 'bx') + T(12, y + 21.5, c, off ? 's dim' : 's') + LINE(150, y + 17, 172, y + 17, off ? 'ln-d' : 'ln');
+    });
+  b += LINE(172, 39, 172, 259, 'ln') + ARR([[172, 150], [196, 150]], 'ln');
+  b += LBOX(198, 100, 132, 100, 'Facts, by code', ['tagged lines:', '[c:] [m:] [a:] …', '06:00 to 06:00'], {});
+  b += LINE(330, 150, 350, 150, 'ln') + LINE(350, 70, 350, 230, 'ln');
+  b += ARR([[350, 70], [372, 70]], 'ln') + LBOX(374, 36, 160, 68, 'Tables, by code', ['commits, meetings,', 'time, counts'], {});
+  b += ARR([[350, 230], [372, 230]], 'ln-c') + LBOX(374, 196, 160, 68, 'Prose, by LLM', ['summary, projects,', 'blockers, tomorrow'], { cls: 'bx-c' });
+  b += ARR([[534, 230], [554, 230]], 'ln-c') + LBOX(556, 180, 150, 100, 'Checker', ['tag shares a word', 'or number; SHAs', 'from git; numbers', 'in the facts'], {});
+  b += LINE(534, 70, 726, 70, 'ln') + LINE(706, 230, 726, 230, 'ln') + LINE(726, 70, 726, 230, 'ln');
+  b += LINE(726, 153, 748, 153, 'ln') + LINE(748, 86, 748, 220, 'ln');
   ['journal .md', 'Today page', 'Outlook draft'].forEach((o, i) => {
     const y = 69 + i * 67;
-    b += ARR([[758, y + 17], [778, y + 17]], 'ln') + RECT(780, y, 100, 34, 'bx') + T(790, y + 21.5, o, 's');
+    b += ARR([[748, y + 17], [768, y + 17]], 'ln') + RECT(770, y, 110, 34, 'bx') + T(780, y + 21.5, o, 's');
   });
-  return wrap('fig-jnl', 880, 292, 'Journal pipeline: six collectors feed the event store; facts by code and narrative by the model pass a validator before output', b, 720);
+  b += T(374, 300, 'No model answers? The tables are written alone: the facts-only journal.', 'm dim');
+  return wrap('fig-jnl', 880, 310, 'Journal pipeline as built: six sources give tagged facts; code renders the tables, the model writes prose from the same facts, and the checker filters it before both are joined into the journal file, the Today page and an Outlook draft', b, 720);
 }
 
 // Figure 10.1 -----------------------------------------------------------------------------------
@@ -427,7 +432,7 @@ export function figEr() {
     return s;
   };
   const rowY = (y, i) => y + 40 + i * 15; // vertical centre of field row i
-  // Rev G: the tables as built in Phases 1 to 3 (mwb/store/schema.sql); the journal's tables follow in Phase 4.
+  // Rev G: the tables as built in Phases 1 to 4 (mwb/store/schema.sql, version 4).
   let b = '';
   b += tbl(0, 0, 'segments', ['id', 'meeting_id → meetings', 'speaker  You | Them | name', 'start_s, end_s', 'text  (FTS5 search)']);
   b += tbl(0, 130, 'action_items', ['id', 'meeting_id → meetings', 'owner  You | name', 'what', 'due_text  as said', 'due_date  worked out by code', 'done']);
@@ -442,12 +447,12 @@ export function figEr() {
   [rowY(0, 1), rowY(130, 1), rowY(290, 0)].forEach((y) => { b += LINE(270, y, 287, y, 'ln-c'); });
   b += LINE(287, mId, 287, rowY(290, 0), 'ln-c') + ARR([[287, mId], [303, mId]], 'ln-c');
   b += ARR([[440, 205], [440, 175]], 'ln-c');
-  // Phase 4, not built yet
-  b += T(0, 438, 'Phase 4 adds the journal\'s tables (not built yet):', 'm b');
-  b += tbl(0, 448, 'events', ['ts_start, ts_end, kind', 'ref_id → meetings | …', 'project_id → projects'], 'bx-w');
-  b += tbl(305, 448, 'commits · activity · emails', ['sha, repo, branch, ts, message', 'app, window title, idle', 'subject, counterpart'], 'bx-w');
-  b += tbl(610, 448, 'journal · projects', ['date, facts_json', 'narrative_md, edited_md', 'repo_paths, title_patterns'], 'bx-w');
-  return wrap('fig-er', 880, 540, 'Entity relationship diagram of the MWB database as built in Phases 1 to 3, with the Phase 4 tables below', b, 760);
+  // Phase 4, built 16 Oct (schema version 4): no foreign keys; commits and mail are read afresh, not stored
+  b += T(0, 438, 'Phase 4, the journal: no foreign keys; commits, sent mail and the calendar are read afresh, not stored', 'm b');
+  b += tbl(0, 448, 'activity', ['id', 'started, ended', 'app  (empty if denylisted)', 'project  (never the title)', 'idle  5 min away, or locked']);
+  b += tbl(305, 448, 'journal_notes', ['id', 'ts', 'text  voice note (Ctrl+Alt+N)']);
+  b += tbl(610, 448, 'journals', ['day  06:00 to 06:00', 'made, path, markdown', 'route  api | local | none', 'model, seconds', 'dropped  by the checker', 'file_hash  notices your edits']);
+  return wrap('fig-er', 880, 590, 'Entity relationship diagram of the MWB database as built in Phases 1 to 4, with the journal tables below', b, 760);
 }
 
 // Figure 17.1 -----------------------------------------------------------------------------------
@@ -457,12 +462,12 @@ export function figPlan() {
   // Rev D: P1 +1 (double-tap Caps, indicator), P3 +1 (answer mode), P5 +1 (skins and indicator settings).
   const x0 = 222, x1 = 840, dmax = 48, sx = (d) => x0 + (d / dmax) * (x1 - x0);
   const rows = [
-    // Rev G: status on 16 Oct. P1 to P3 were built on 14 Oct; their checks with real use are still open.
+    // Rev G: status on 16 Oct. P1 to P3 were built on 14 Oct and P4 on 16 Oct; their checks with real use are still open.
     ['P0', 'Spikes & calibration', 0, 3, 'measure before building · 4 of 8 tests finished'],
     ['P1', 'Dictation MVP', 3, 11, 'M1 · Wispr Flow can be switched off · built 14 Oct'],
     ['P2', 'Meeting capture', 11, 20, 'M2 · auto-recorded calls in any VC app · built 14 Oct'],
     ['P3', 'Understanding', 20, 30, 'M3 · notes, labels, answers, email, code · built 14 Oct'],
-    ['P4', 'Daily journal', 30, 37, 'M4 · first automatic journal'],
+    ['P4', 'Daily journal', 30, 37, 'M4 · first automatic journal · built 16 Oct'],
     ['P5', 'Profiles & effort', 37, 48, 'M5 · POC sign-off'],
   ];
   const top = 32, rh = 42, bottom = top + rows.length * rh;

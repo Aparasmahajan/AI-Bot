@@ -11,3 +11,6 @@ docs/src/out/
 
 # Partial downloads
 *.part
+
+# The portable build (tools/build_portable.py)
+dist/

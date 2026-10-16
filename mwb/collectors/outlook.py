@@ -1,6 +1,8 @@
 """The classic Outlook calendar through COM with comtypes (design §9.3, proven by P0-3 with no security pop-up).
 At the start of a call MWB looks for a calendar item running within 10 minutes either side and takes its subject
-and meeting platform. Decision 4: MWB may start Outlook when it isn't running. Nothing else is read."""
+and meeting platform. Decision 4: MWB may start Outlook when it isn't running. Answer mode reads upcoming items, the
+email skill the open email, and the journal the subjects and recipients of sent mail (never bodies) and tomorrow's
+calendar. Drafts are only ever displayed: there is no Send() anywhere in MWB."""
 import ctypes, ctypes.wintypes as wt, datetime, logging, re
 
 log = logging.getLogger('mwb.outlook')
@@ -128,6 +130,80 @@ def open_reply_draft(text):
         return True
     except Exception as e:
         log.info('no draft opened: %s', type(e).__name__)
+        return False
+    finally:
+        comtypes.CoUninitialize()
+
+
+# ---- the journal (§9.6): metadata only, and a draft you send yourself ---------------------------------------------
+
+def _when(v):
+    return datetime.datetime(v.year, v.month, v.day, v.hour, v.minute)
+
+
+def mail_day(start, end, mode='if-running', limit=60):
+    """{'sent': [{'subject', 'to', 'time'}], 'received': n} between start and end: subjects and names only, never
+    bodies (EML-4). None when classic Outlook can't be read."""
+    if mode == 'off':
+        return None
+    import comtypes
+    comtypes.CoInitialize()
+    try:
+        ns = _outlook(mode).GetNamespace('MAPI')
+        window = f"'{regional(start)}' AND [%s] < '{regional(end)}'"
+        sent = ns.GetDefaultFolder(5).Items                           # 5 = Sent Items
+        sent.Sort('[SentOn]')
+        found = sent.Restrict(f"[SentOn] >= {window % 'SentOn'}")
+        out, it = [], found.GetFirst()
+        while it is not None and len(out) < limit:
+            out.append({'subject': (it.Subject or '(no subject)').strip()[:150], 'to': (it.To or '')[:150],
+                        'time': _when(it.SentOn)})
+            it = found.GetNext()
+        received = ns.GetDefaultFolder(6).Items.Restrict(f"[ReceivedTime] >= {window % 'ReceivedTime'}").Count
+        return {'sent': out, 'received': received}
+    except Exception as e:
+        log.info('mail not read: %s', type(e).__name__)
+        return None
+    finally:
+        comtypes.CoUninitialize()
+
+
+def calendar_between(start, end, mode='if-running', limit=12):
+    """[{'subject', 'start', 'end'}] for calendar items starting between start and end."""
+    if mode == 'off':
+        return []
+    import comtypes
+    comtypes.CoInitialize()
+    try:
+        items = _outlook(mode).GetNamespace('MAPI').GetDefaultFolder(9).Items
+        items.IncludeRecurrences = True
+        items.Sort('[Start]')
+        found = items.Restrict(f"[Start] >= '{regional(start)}' AND [Start] < '{regional(end)}'")
+        out, it = [], found.GetFirst()
+        while it is not None and len(out) < limit:
+            out.append({'subject': (it.Subject or '').strip()[:150], 'start': _when(it.Start), 'end': _when(it.End)})
+            it = found.GetNext()
+        return out
+    except Exception as e:
+        log.info('calendar not read: %s', type(e).__name__)
+        return []
+    finally:
+        comtypes.CoUninitialize()
+
+
+def journal_draft(subject, body, to=''):
+    """Open a new email with the journal, as a draft window (JNL-4). MWB never sends it. True if it opened."""
+    import comtypes
+    comtypes.CoInitialize()
+    try:
+        mail = _outlook('start').CreateItem(0)                         # 0 = a mail item
+        mail.Subject = subject
+        mail.To = to
+        mail.Body = body
+        mail.Display()
+        return True
+    except Exception as e:
+        log.info('no journal draft: %s', type(e).__name__)
         return False
     finally:
         comtypes.CoUninitialize()

@@ -44,7 +44,12 @@ Prepared 12 October 2026.
 30. [Phase 3: understanding is built](#30-phase-3-understanding-is-built)
 31. [The code and flow changed: update the docs](#31-the-code-and-flow-changed-update-the-docs)
 32. [Results in the indicator's place, like Wispr Flow](#32-results-in-the-indicators-place-like-wispr-flow)
-33. [Glossary](#33-glossary)
+33. [How to make MWB write an email](#33-how-to-make-mwb-write-an-email)
+34. [Making MWB read an app's screen or a whole code function](#34-making-mwb-read-an-apps-screen-or-a-whole-code-function)
+35. [Is everything done? Phase 4, the journal, is built](#35-is-everything-done-phase-4-the-journal-is-built)
+36. [Phase 5 built: recovery, settings, skins, effort, portable](#36-phase-5-built-recovery-settings-skins-effort-portable)
+37. [All things done?](#37-all-things-done)
+38. [Glossary](#38-glossary)
 
 ---
 
@@ -1938,7 +1943,184 @@ The old Tk result window is gone from `mwb/ui/cards.py`; the "Record this call?"
 
 ---
 
-## 33. Glossary
+## 33. How to make MWB write an email
+
+**Your question**
+
+> tell me how to use its ai generation mode to make it write a email
+
+**My answer**
+
+MWB writes emails with one shortcut, **Ctrl+Alt+E**. A quick press *explains* an email; **holding it while you speak** *writes* one. MWB is running when its icon is in the tray (start it with `Start MWB.cmd`).
+
+**To reply to an email:**
+
+1. Open the email. In classic Outlook, just having it open or selected is enough. In new Outlook or a browser, select the email's text with the mouse.
+2. Click where you want the reply to go, for example in the reply box.
+3. **Hold Ctrl+Alt+E**. After about a third of a second the pill turns blue: MWB is listening.
+4. Keep holding and say the point of your reply in your own words, for example: *"Thank them, say I'll send the report by Friday, and ask if Monday's call is still on."*
+5. **Let go.** The pill shows amber dots, and a panel rises above it with the draft streaming in.
+6. Choose a button:
+   - **Insert** pastes the draft where your cursor is.
+   - **Copy** puts it on the clipboard.
+   - **Open as Outlook draft** (only when the email came from classic Outlook) opens a reply window with the draft at the top.
+   - **Esc** or **×** throws it away.
+
+**To write a new email:** do the same with no email selected. Click in the body of a new email, hold Ctrl+Alt+E and say what it should say, for example *"Email to Rahul: the release moves to Thursday because testing found two bugs; ask him to tell the client."* MWB writes it from what you said alone.
+
+**What MWB does with it:**
+
+- It writes in your style from the settings: "Hi <first name>,", short paragraphs, "Thanks,". It keeps to about 150 words, and it keeps names, dates and numbers exactly as you said them.
+- It sends the email and your words to Groq (`gpt-oss-120b`); if the API doesn't answer, the model on the laptop writes it instead. Your voice itself never leaves the laptop: speech is turned into text on the laptop first.
+- **MWB never sends email.** You read the draft, change it, and press Send yourself.
+
+**If nothing happens:** check that the tray icon is there and not paused (Ctrl+Alt+P pauses). If you only tapped the keys, MWB explains the selected email instead of writing; hold them while you speak.
+
+---
+
+## 34. Making MWB read an app's screen or a whole code function
+
+**Your question**
+
+> how to make it read the screen of app or a entire code function
+
+**My answer**
+
+MWB doesn't look at the screen. It reads **the text you select**: when you press one of its shortcuts it copies the selection (Ctrl+C), reads it, and puts your own clipboard back. This was decided on purpose: the requirements say MWB never takes screenshots, so nothing you didn't choose ever leaves the laptop. Selecting is how you show MWB what to read. The one exception is classic Outlook, where MWB can read the open email by itself.
+
+**A whole code function:**
+
+1. In VS Code, click anywhere inside the function.
+2. Press **Shift+Alt+→** (Expand Selection) a few times, until the whole function is highlighted. You can also drag with the mouse, or press Ctrl+A for the whole file.
+3. **Tap Ctrl+Alt+K** (a quick press, don't hold). The panel above the pill shows three parts: *What it does*, *Problems* and *Better version*.
+4. If there is a better version, the panel has **Open diff in VS Code** (see old and new side by side) and **Replace selection** (put the new code in place of the selected code). **Copy** copies the whole explanation.
+
+MWB reads up to about 12,000 characters of code, roughly 300 lines. It works out the language from the file name in VS Code's title bar.
+
+**The text of any other app (a web page, a document, a chat):**
+
+1. Select the text, or press **Ctrl+A** to select everything in that window.
+2. **Hold Ctrl+Alt+R** and say what you want, for example *"summarise this in three bullets"*, *"explain this simply"* or *"translate to Hindi"*.
+3. Let go. The result appears in the panel. Press **Copy** to keep it, or **Esc** to close it. Don't press **Replace** unless you want your selected text changed.
+
+For an email, tap **Ctrl+Alt+E** instead (section 33).
+
+**What MWB can't do yet:** read text it can't select, such as a picture, a video or a screen share in Teams. And answer mode ("MWB, …") answers from your meetings, calendar and dictation history, not from the selection. Reading the screen would need screenshots, which the design rules out. If you want that changed, it is a design decision for us to make together first.
+
+---
+
+## 35. Is everything done? Phase 4, the journal, is built
+
+**Your question**
+
+> is every thing done?
+>
+> or any phase is pending
+>
+> if pending then complete it
+
+**My answer**
+
+Not everything was done. Phases 1 to 3 (dictation, meetings, understanding) were built on 14 October. **Phase 4, the daily journal, was still to do, so I built it today.** Phase 5 is still to come, and some checks can only be done by you.
+
+**What Phase 4 does:**
+
+| Part | What it does |
+|---|---|
+| Time per project | Every 10 s MWB notes which app is in front and which project its window belongs to. It reads the window title only to find the project and never stores it. Five minutes without keyboard or mouse counts as away. Banking, WhatsApp and other denylisted apps count only as "Private" |
+| Commits | At journal time it reads your commits (by your git email) from all 35 repositories under `Documents\New folder`, on every branch, with lines added and removed and files not yet committed |
+| Meetings, notes, tomorrow | Your meetings with their labels, decisions and action items; voice notes (hold **Ctrl+Alt+N** and speak); dictation counts; tomorrow's calendar from classic Outlook |
+| The journal | At **18:30**, or when you press **Ctrl+Alt+Shift+J**, MWB writes `Documents\MWB\journal\YYYY-MM-DD.md`. Code writes the tables (commits, meetings, time); the model writes only a short summary, a few sentences per project, blockers and tomorrow's plan |
+| The checker | Every sentence the model writes must cite a fact, for example `[c:88500ed]` for a commit. A sentence is removed if its tag doesn't exist, if the fact it cites has nothing to do with it, if it names a commit ID git doesn't know, or if it has a number that isn't in the facts. If no model answers at all, the journal is still written, with the facts only |
+| On the Today page | Ctrl+Alt+J now has a Journal section. Each day's journal has Copy, **Open as Outlook draft** (MWB never sends it) and Write again |
+| Your edits | If you edit a journal file, a later run writes a new file beside it and never over yours |
+
+**Measured today:** a real journal for today, through Groq, took **2.7–3.2 s**, of which reading git took 1.9 s. The design's limit is 5 minutes. 69 automatic tests pass, 17 of them new for the journal. When I started MWB to check it, the database upgraded itself and the sampler correctly logged you as away since your last keypress. I didn't run `test_paste`, because you may be typing.
+
+**One thing I found while testing:** the model once cited the dictation count for a sentence about uncommitted files. The checker now also checks that the cited fact matches the sentence, and that sentence would be removed.
+
+**What's still open:**
+
+- **Phase 5** (profiles and effort levels, the setup screen for a new laptop, the other seven indicator skins, a settings window, crash recovery and a portable build). Its goal is "MWB runs as your daily tool for a full week", so it builds on you using Phases 1 to 4 first. Some of it needs your decisions, such as model downloads.
+- **Sent mail in the journal is off** until you decide about your work email (it is only in Outlook on the web). See "Now" in TODO.md.
+- **Things only you can do:** try dictation in your five apps, the call tests (P0-1, P0-5), your voice test (P0-7), the local half of P0-4 when about 3.5 GB is free, and the question to IT about recording colleagues.
+- The weekly roll-up (JNL-5) is a "could" in the requirements and isn't built.
+- The design document still says the journal is "not built yet"; it needs a small update.
+
+**Something to know:** at 13:11 today two dictations failed because only 0.5–0.7 GB of memory was free and speech needs 1.0 GB. Switching off Wispr Flow (about 1.5 GB) is the biggest help.
+
+---
+
+## 36. Phase 5 built: recovery, settings, skins, effort, portable
+
+**Your question**
+
+> Do this task here: "Build MWB Phase 5: profiles, skins, settings, recovery"
+
+**My answer**
+
+Done. Phase 5 is built and tested in this session, so all five phases of the plan are now built. What's left is your own use (Phase 5's goal is "MWB runs as your daily tool for a full week") and the tests only you can do.
+
+| Part | What you get |
+|---|---|
+| Crash recovery | "Start MWB.cmd" now starts a small watchdog. If MWB crashes, the watchdog starts it again (at most 3 times in 10 minutes, then it stops and tells you). When MWB comes back it says so in the tray, and a call that was being recorded is transcribed from what was already saved |
+| Forget | On the Today page: **Forget this meeting** (with its transcript, notes and action items) and **Forget today**. The journal file goes to the Recycle Bin, not deleted for good |
+| Settings window | Tray → **Settings…**: the common settings in tabs. It saves only what you change, keeps your notes in the file, and MWB starts again by itself to use them once it isn't busy |
+| Eight skins | Capsule, dot, bars, ring, wave, orb, mic and pixel, chosen in Settings → Indicator. Same colours in every skin: blue listening, amber working, green done, grey paused |
+| Effort levels | Tray → **Performance…** opens the setup screen. It shows what MWB found on this laptop (i7-1185G7, 16 GB in one stick, Iris Xe), what it measured, and suggests **Balanced (E2)**. Max (E4) is greyed out because this laptop has no GPU and one memory stick. By itself, MWB works one level lower on battery and when the laptop is busy. It opens by itself the first time MWB runs on a laptop |
+| Portable | `tools\build_portable.py` makes `dist\MWB-portable` (69 MB): MWB with its own copy of Python and its approved libraries. Nothing was downloaded |
+
+**What effort levels actually change:** how many processor threads speech and whisper use, how long the speech engine stays loaded after you dictate, whether meetings are transcribed during the call or after it, and which local model is used if the API fails. Anything you've set yourself in your settings file always wins.
+
+**Measured:** each skin draws a frame in 0.15–0.6 ms; the hardware check takes 3.3 s in the background at start; the portable build took 16 s. 84 automatic tests pass, 15 of them new.
+
+**Not built, on purpose:** downloading models from the setup screen (it lists missing models; the project rule is to ask you before any download), speaker separation and the overnight re-transcription (they need models this laptop can't run), and changing shortcuts in the Settings window (they stay in the settings file).
+
+**The first time you start MWB now,** the setup screen opens once, because this laptop's effort level has never been chosen. Press Save to keep Balanced, or pick another.
+
+*Update (16 Oct, 16:44), after you asked: "I'm away from the keyboard now: run the live check (start MWB through the watchdog, fake a crash, check the recovery, and look at the Settings window)."* Every part passed on the real laptop. Started through the watchdog, MWB opened the setup screen by itself and went to Battery saver (E1), because only 0.6 GB was free. I ended it abruptly to fake a crash: the watchdog started it again 2.4 s later, and the new run noticed the crash. Saving the orb skin made MWB restart itself in 0.6 s with the orb showing; removing that test settings file (to the Recycle Bin) brought the Capsule back. The quit shortcut then closed MWB and its watchdog cleanly. Two things were fixed on the way: the Settings window sat partly behind the taskbar, and Ctrl+Tab now switches its tabs. MWB is not running now.
+
+---
+
+## 37. All things done?
+
+**Your question**
+
+> all things done??
+
+**My answer**
+
+Everything that can be built is built: all five phases of the plan, each tested on this laptop. What's left needs you, because it depends on your voice, your calls, your apps or your decisions.
+
+**Built and tested (16 Oct):**
+
+| Phase | What it is |
+|---|---|
+| 1 Dictation | Double-tap Caps Lock or hold push-to-talk; text in about a second |
+| 2 Meetings | Calls in any app found, recorded with your permission, transcribed on the laptop |
+| 3 Understanding | Notes, Work or Timepass labels, email, code, rewrite, answers, results above the pill |
+| 4 Journal | Commits, meetings, time per project and notes at 18:30, every sentence checked |
+| 5 Daily-tool polish | Watchdog crash recovery, Settings window, eight skins, effort levels, Forget, portable build |
+
+**Only you can do these** (TODO.md, "Now"):
+
+1. **Use MWB for real.** Start it with `Start MWB.cmd` (it isn't running now). The setup screen opens once: press Save. Try dictation in Outlook, Teams, VS Code, Brave and one more app, and tell me where it goes wrong. Phase 5's goal is a full week of daily use.
+2. **Switch Wispr Flow off** once you're happy. Memory is the biggest problem: today two dictations failed with 0.5–0.7 GB free, and switching Wispr Flow off frees about 1.5 GB.
+3. **Decide about work email** in the journal: add the account to classic Outlook, ask for a Microsoft Graph sign-in, or leave it out (as now). Optionally, give your manager's email for the journal draft.
+4. **The tests that need you:** P0-5 and P0-1 during a call, the voice test P0-7, and the local half of P0-4 when about 3.5 GB is free.
+5. **Ask IT or your manager** whether MWB may record calls with colleagues. Until then, choose "Not this one" on work calls.
+6. **Make the GitHub repository private** before anything is pushed.
+
+**Two loose ends on my side:**
+
+- None of the work since 14 Oct is committed: 43 files changed. Tell me when you want a commit (it stays on your laptop until the repository is private).
+- The design document and demo are updated in the folder, but the online copies weren't, because their links don't open from the account this session uses.
+
+**Not built, on purpose:** model downloads from the setup screen (the rule is to ask you first), speaker separation and overnight re-transcription (this laptop can't run those models), the weekly journal roll-up (a "could" in the requirements), and changing shortcuts in the Settings window.
+
+---
+
+## 38. Glossary
 
 | Term | Meaning |
 |---|---|

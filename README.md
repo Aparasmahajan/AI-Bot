@@ -9,6 +9,9 @@ MWB is the working name of a Wispr-Flow-like work assistant for Windows. It is b
 
 **Status, 16 October 2026:**
 - The design document is at Rev G: it now describes MWB as built on 14 October, with Phase 0's measured numbers. The interactive demo was brought in line too.
+- **Phase 4, the daily journal, is built** (16 Oct): at 18:30, or when you press Ctrl+Alt+Shift+J, MWB writes the day's commits, meetings, time per project, voice notes and tomorrow's calendar to `Documents\MWB\journal`. Every sentence the model writes cites its facts, and a checker removes any that don't hold up.
+- Results (answers, drafts, rewrites) now open above the indicator pill instead of in a separate window.
+- **Phase 5 is built too** (16 Oct): a watchdog restarts MWB after a crash, a Settings window, eight indicator skins, effort levels with a setup screen for each laptop, "Forget this meeting" and "Forget today", and a portable build. All five phases are now built; what is left is your own use and the tests that need you (see [TODO.md](TODO.md)).
 - **Phase 3, understanding, is built**: meeting notes with action items, Work or Timepass labels, email, code, rewrite and answers, through Groq with the local model as a fallback.
 - **Phase 2, meetings, is built too**: calls in any app are found, recorded with your permission and transcribed on this laptop; see TODO.md for what still needs real calls.
 - **Phase 1, dictation, is built and ready for you to try:** double-click `Start MWB.cmd`. The checks that need your voice and your apps are still to do; see [TODO.md](TODO.md).
@@ -39,7 +42,7 @@ See [TODO.md](TODO.md).
 | [docs/src/](docs/src/) | Sources of the design document and the demo |
 | [CLAUDE.md](CLAUDE.md) | Context and working rules for AI assistants on this project |
 
-## Using MWB (Phase 1: dictation)
+## Using MWB
 
 | Do this | And MWB |
 |---|---|
@@ -47,12 +50,14 @@ See [TODO.md](TODO.md).
 | Hold **Ctrl+Shift+Alt+Space**, talk, let go | The same, push-to-talk. (Ctrl+Alt+Space belongs to another app on this laptop) |
 | Press **Esc** while it listens | Cancels; nothing is typed |
 | Double-tap **Alt** | Shows or hides the small indicator above the taskbar |
-| Double-tap **Caps Lock** and ask, with the cursor outside a text box, or start with "MWB, ..." | Answers in a small card. Questions about your day ("What are my open action items?") are answered from your own meetings, notes and calendar, with citations |
+| Double-tap **Caps Lock** and ask, with the cursor outside a text box, or start with "MWB, ..." | Answers in a panel above the indicator. Questions about your day ("What are my open action items?") are answered from your own meetings, notes and calendar, with citations |
 | Select an email, press **Ctrl+Alt+E** | Explains it: what they want, deadlines as real dates, reply ideas. Hold the keys and speak to draft a reply; MWB never sends it |
 | Select code, press **Ctrl+Alt+K** | Explains it, lists problems and suggests a better version (Replace, or a VS Code diff). Hold the keys and describe code to have it written at the cursor |
 | Select text, hold **Ctrl+Alt+R** and say "shorter" or "more formal" | Rewrites it; Replace puts it back |
 | **Ctrl+Alt+M** | Starts or stops recording a call by hand. Calls in Teams, Zoom, Meet and others are found by themselves, and MWB asks before recording |
-| **Ctrl+Alt+J** | Opens the Today page in your browser: meetings, transcripts and search |
+| **Ctrl+Alt+J** | Opens the Today page in your browser: the journal, meetings, transcripts and search |
+| Hold **Ctrl+Alt+N** and speak | Adds a voice note to today's journal |
+| **Ctrl+Alt+Shift+J** | Writes today's journal now (it is also written by itself at 18:30) |
 | **Ctrl+Alt+P** | Pauses or resumes MWB |
 | **Ctrl+Alt+Shift+W** | Quits MWB |
 
@@ -62,7 +67,11 @@ The first dictation after MWB starts, or after 15 minutes without one, waits whi
 
 **Meetings (Phase 2).** When an app has used the mic for 20 s, MWB asks "Record this call?" in a small card at the bottom right. It always asks in its first week, and always for personal apps such as WhatsApp. While it records, the tray icon and the indicator get an orange ring. Your voice and the other side are transcribed on this laptop with whisper small, which handles Hindi and Hinglish. That happens during the call on mains power, or after it on battery, and no audio is kept. The tray can also import a transcript that Teams, Zoom or Webex made (.vtt, .docx or .txt).
 
-Where it keeps things: settings in `%APPDATA%\MWB\config.toml` (tray menu, Settings file), your dictation history in `%LOCALAPPDATA%\MWB\mwb.db`, and logs in `%LOCALAPPDATA%\MWB\logs`. Logs never contain what you said.
+**The journal (Phase 4).** Every 10 s MWB notes which app is in front and which project its window belongs to (from the window title, which itself is never stored). Apps and titles on the denylist, such as banking and WhatsApp, count only as "Private". At 18:30 it reads today's commits from every git repository under `Documents\New folder`, adds your meetings, notes, dictation counts and tomorrow's calendar, and writes `Documents\MWB\journal\YYYY-MM-DD.md`. Commit IDs, times and counts come from code; the model writes only the prose, and each of its sentences must cite a fact. On the Today page you can copy the journal or open it as an Outlook draft; MWB never sends it. If you edit the file, a later run writes a new file beside it instead of over yours. Sent mail is left out until you decide about your work email (see TODO.md).
+
+**Settings, skins and effort (Phase 5).** Tray → **Settings…** opens a window for the common settings, including the indicator's eight skins; MWB starts again by itself to use what you saved. Tray → **Performance…** opens the setup screen: how hard MWB works on this laptop, from Battery saver (E1) to High (E3), adjusting by itself on battery or when the laptop is busy. It opens by itself the first time MWB runs on a laptop. If MWB crashes, its watchdog starts it again and the tray says what it picked up. On the Today page you can **Forget this meeting** or **Forget today**. To take MWB to another laptop, build a portable folder with `.venv\Scripts\python.exe tools\build_portable.py`.
+
+Where it keeps things: settings in `%APPDATA%\MWB\config.toml` (tray menu, Settings… or Settings file), this laptop's effort choice in `%LOCALAPPDATA%\MWB\machine`, your dictation history in `%LOCALAPPDATA%\MWB\mwb.db`, and logs in `%LOCALAPPDATA%\MWB\logs`. Logs never contain what you said.
 
 ## How it works, in short
 

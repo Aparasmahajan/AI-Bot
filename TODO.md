@@ -1,6 +1,6 @@
 # TODO
 
-This is the live status of the MWB proof of concept, last updated on 16 October 2026. The design document has the full detail: §17 is the plan and §19 the decisions.
+This is the live status of the MWB proof of concept, last updated on 16 October 2026 (Phases 4 and 5 built). The design document has the full detail: §17 is the plan and §19 the decisions.
 
 ## Now: things only you can do
 
@@ -10,7 +10,8 @@ This is the live status of the MWB proof of concept, last updated on 16 October 
   - [ ] When you're happy with it, switch Wispr Flow off. That frees about 1.5 GB, which the speech engine needs.
 - [ ] Answer the remaining questions:
   - [x] Call apps: Teams, and MWB must be ready for any call app (13 Oct).
-  - [ ] Your work email (Microsoft 365) is only in Outlook on the web, so MWB can't read your sent mail for the journal yet. Choose one: add that account to classic Outlook, if both companies allow it; ask its admin to allow a Microsoft Graph sign-in; or leave email out of the journal.
+  - [ ] Your work email (Microsoft 365) is only in Outlook on the web, so MWB can't read your sent mail for the journal yet. Choose one: add that account to classic Outlook, if both companies allow it (then set `email = "classic-outlook"` under `[journal]` in your settings file); ask its admin to allow a Microsoft Graph sign-in; or leave email out of the journal, which is how it is now.
+  - [ ] Optional: your manager's email address for the journal's "Open as Outlook draft" (`manager_email` under `[journal]`).
   - [x] Hindi and Hinglish: yes, your meetings use both (13 Oct).
   - [x] Outlook: the classic app, which runs to show your meetings; MWB may start it (13 Oct).
   - [x] Work email: Outlook on the web in an Edge work profile (13 Oct).
@@ -126,6 +127,50 @@ Found on the way:
 - With only two lanes, MWB can't tell who on the other side is speaking, so their action items say "Them". Telling voices apart comes later in the design.
 - The core idles at 59 MB working set (36 MB private) with the text-box check ready: just under the 60 MB target.
 
+## Phase 4: the daily journal (built 16 Oct)
+
+Built on 16 Oct, following design §9.6:
+- **the activity sampler** (`mwb/sensors/activity.py`): every 10 s, the app in front and its project, worked out from the window title, which is never stored or logged. Five minutes without input, or a locked screen, counts as away, backdated to the last input. Denylisted apps and titles count as "Private"; nothing is recorded while MWB is paused;
+- **the git collector** (`mwb/collectors/git.py`): commits by your git email on every branch of the 35 repositories under `Documents\New folder`, with lines added and removed, and uncommitted files; four repositories at a time, 1.9 s for all of them;
+- **Outlook**: sent-mail subjects and recipients (off until you decide about work email), tomorrow's calendar, and the journal as a draft that MWB only opens;
+- **the journal** (`mwb/skills/journal.py`): the day runs 06:00 to 06:00. Code renders the commit table, meetings with labels and decisions, time per project, notes, open items and tomorrow. The model writes the summary, a few sentences per project, blockers and the plan. A checker drops any sentence whose tag is unknown, whose cited fact shares nothing with it, that names a commit ID git doesn't know, or that has a number the facts don't contain. With no model at all it still writes the facts;
+- **when**: at 18:30, or Ctrl+Alt+Shift+J, or from the Today page or the tray. A journal missed because the laptop was off is written the next morning. A scheduled run that can't reach a model tries again every 15 minutes, then writes the facts alone after the third try;
+- **Ctrl+Alt+N**: hold and speak a voice note; it appears under Notes;
+- **the Today page**: a Journal section, a page per day with the citations as chips, Copy Markdown, Open as Outlook draft, and Write again.
+
+| Pass criterion (design P4) | Status, 16 Oct |
+|---|---|
+| Journal within 5 minutes on Lean | **2.7–3.2 s** through Groq for today's journal (git 1.9 s of that) |
+| Every SHA correct | **Passed** in the tests: SHAs come from git, and a sentence naming an unknown one is removed |
+| Every narrative sentence linked to an event | **Passed** in the tests: 17 journal tests, including a whole journal from a scratch database |
+| Totals add up to the working day within 10 % (JNL-2) | Built so they add up exactly: away time is the rest of the working day. Needs a real day of activity |
+
+Not built: the weekly roll-up (JNL-5, a "could"), and email in the journal until you choose (see "Now").
+
+## Phase 5: profiles, skins, settings, recovery (built 16 Oct)
+
+Built on 16 Oct, following design §12, §13.3 and §14:
+- **crash recovery**: "Start MWB.cmd" now runs a small watchdog (`mwb/watchdog.py`) that starts MWB and starts it again after a crash, at most 3 times in 10 minutes, then stops and says so. MWB notices a run that didn't end cleanly (`mwb/recovery.py`) and says what it picked up. An interrupted call is transcribed from the pieces on disk, and its end time is the last piece, not the restart. A fault in the 15 ms loop is logged and the loop carries on; a stream of them ends the core so the watchdog starts a fresh one;
+- **Forget this meeting** and **Forget today** on the Today page: the rows, any audio and the journal entries go together. The journal file goes to the Recycle Bin, and that day's journal is written again without a forgotten meeting. A call still being recorded or transcribed is kept until it's ready;
+- **the Settings window** (tray → Settings…): General, Indicator (with all eight skins to pick from), Dictation, Meetings, Journal, Language and Performance. It saves only what you changed into `%APPDATA%\MWB\config.toml`, keeping your comments, and MWB starts again by itself to use it once nothing is in progress. A settings file with a mistake is reported instead. Shortcuts stay in the settings file;
+- **the other seven indicator skins**: dot, bars, ring, wave, orb, mic and pixel, drawn like the Capsule, with the same colours for the same states. A frame takes 0.15–0.3 ms (Capsule 0.6 ms) at 1.25× scale;
+- **profiles, effort levels and the setup screen** (`mwb/machine.py`, `mwb/effort.py`, `mwb/ui/setup.py`): the hardware probe from P0-6 runs at each start, in the background (3.3 s); this laptop keeps its fingerprint `530285546f` and stays Lean. The setup screen shows what was found and measured (API first words, measured live), suggests Balanced (E2), greys out Max with the reason, and saves your choice for this laptop only. The governor sets a level per feature every 30 s: one lower on battery, two below 30 %, one more when the CPU is busy or memory is under 2 GB. The levels turn real knobs: speech and whisper threads, how long speech stays warm, live meeting transcription, and the local model's threads and size. A setting you set yourself always wins. The tray shows the level ("Performance: Effort E2 · Balanced…");
+- **a portable build** (`tools/build_portable.py`): this laptop's own Python without its test suite, the approved libraries from `.venv`, and MWB, in `dist\MWB-portable` (69 MB, 16 s to build). Nothing is downloaded. It doesn't include AI-App's speech environment, whisper-cli, the model files or llama.cpp, which aren't MWB's; on another laptop the setup screen lists what's missing.
+
+| Pass criterion (design P5) | Status, 16 Oct |
+|---|---|
+| MWB runs as your daily tool for a full week | Built; needs your week. Start it with `Start MWB.cmd` so the watchdog looks after it |
+
+Live check on this laptop, 16 Oct 16:40–16:44, with only 0.6–1.9 GB free:
+- started through the watchdog; the setup screen opened by itself (no level chosen yet), and the governor chose E1 because free memory was under 2 GB;
+- the core was ended abruptly: the watchdog logged the crash and a new core was running 2.4 s later, and said the last run hadn't stopped cleanly;
+- a saved setting (the orb skin) made MWB start again by itself in 0.6 s, logged as a requested restart, and the orb showed; removing the settings file brought the Capsule back the same way;
+- the Settings window's Indicator tab showed all eight skins with Orb ticked;
+- Ctrl+Alt+Shift+W quit MWB and the watchdog together, with no false crash left for the next start.
+Fixed on the way: the Settings window sat partly behind the taskbar (its title bar wasn't counted), and Ctrl+Tab now moves between its tabs.
+
+Not built: model downloads from the setup screen (MWB lists missing models and asks; CLAUDE.md says no download without your yes), speaker separation and the night second pass at E3/E4 (they need models this laptop doesn't have), and editing shortcuts in the Settings window.
+
 ## After Phase 0
 
 | Phase | What gets built | Days | Done when |
@@ -133,8 +178,8 @@ Found on the way:
 | 1 | Dictation: core, tray, hotkeys, double-tap Caps Lock, speech worker, clean-up, paste, indicator (Capsule skin). **Built 14 Oct; see above** | 3–11 | Text arrives within 1 s of finishing a phrase of up to 10 s; the core idles at 60 MB or less; it works in 5 apps; Wispr Flow can be switched off |
 | 2 | Meetings in any call app: detector, two-lane recorder, background transcription, transcript import. **Built 14 Oct; see above** | 11–20 | At least 95 % of a week's calls are found; personal apps always ask; transcripts arrive within 2 minutes of the end |
 | 3 | Understanding: API client and router with the local fallback, notes, Work or Timepass, email, code, answer mode. **Built 14 Oct; see above** | 20–30 | Notes arrive within 10 minutes of a 60-minute call; 80 % of labels match yours; everything works with the network off |
-| 4 | Daily journal: collectors, facts by code, cited summary, Today page, 18:30 reminder | 30–37 | The journal is ready within 5 minutes; every commit ID is correct; every sentence cites its events |
-| 5 | Profiles, effort levels and the setup screen, the other 7 indicator skins, settings, crash recovery, portable build | 37–48 | MWB runs as your daily tool for a full week |
+| 4 | Daily journal: collectors, facts by code, cited summary, Today page, 18:30 reminder. **Built 16 Oct; see above** | 30–37 | The journal is ready within 5 minutes; every commit ID is correct; every sentence cites its events |
+| 5 | Profiles, effort levels and the setup screen, the other 7 indicator skins, settings, crash recovery, portable build. **Built 16 Oct; see above** | 37–48 | MWB runs as your daily tool for a full week |
 
 ## Decisions (design document §19)
 
@@ -193,7 +238,10 @@ Found on the way:
   - Phase 3 built and tested: 55 unit tests in all, notes through Groq in 3 s, and 10 of 10 day questions answered with correct facts.
 - **16 Oct:**
   - design document Rev G: it now matches the code built for Phases 1 to 3 (checked against the code), with Phase 0's measured numbers in a new §6.5, the 13 Oct decisions, and six figures redrawn; republished to the same link;
-  - the interactive demo brought in line: meetings through whisper-cli, the 400 ms clipboard, the 20 s API timeout, the "Record this call?" buttons and the push-to-talk fallback.
+  - the interactive demo brought in line: meetings through whisper-cli, the 400 ms clipboard, the 20 s API timeout, the "Record this call?" buttons and the push-to-talk fallback;
+  - results open above the indicator pill, like Wispr Flow, with smoother animation;
+  - Phase 4 built and tested: 69 unit tests in all, and a real journal for today through Groq in 3 s;
+  - Phase 5 built and tested: 84 unit tests in all, the setup screen on this laptop, and the portable build.
 
 ## Note on this repository
 

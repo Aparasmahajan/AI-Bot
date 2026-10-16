@@ -61,6 +61,21 @@ Read `README.md` and `TODO.md` first. The design document, `docs/MWB-POC-Design.
     - results (answers, drafts, rewrites) open in the indicator's place: `ui/indicator.py` `ResultPanel`, drawn by `art.panel()`. The window takes clicks only while a panel is open and never takes the focus (`WM_MOUSEACTIVATE` → `MA_NOACTIVATE`). `Cards.result()` hands over to it.
     - Tk cards (`ui/cards.py`, "Record this call?"): never call `deiconify()`: Tk would take the focus. Show them with `ShowWindow(SW_SHOWNOACTIVATE)`.
   - `tests/e2e_answers.py` asks the 10 day questions through Groq on a scratch database.
+  - Phase 4, the journal:
+    - `sensors/activity.py`: the app in front every 10 s and its project, from the window title, which is never stored; away after 5 idle minutes; denylist → "Private";
+    - `collectors/git.py`: commits by your git email under `repo_roots`, four repositories at a time;
+    - `collectors/outlook.py` `mail_day()`, `calendar_between()`, `journal_draft()` (displayed, never sent);
+    - `skills/journal.py`: the 06:00-to-06:00 day, facts rendered by code, prose from the model, `check_sentence()` (valid tag whose fact shares a word or number, known SHAs, numbers from the facts), Markdown in `Documents\MWB\journal`; your edited file is never overwritten;
+    - Ctrl+Alt+N voice note, Ctrl+Alt+Shift+J writes now, 18:30 by itself; the Today page has `/journal/<day>`.
+  - Phase 5:
+    - `watchdog.py`: `Start MWB.cmd` runs it; exit 0 = you quit, 3 = restart now (settings saved), anything else = crash (3 restarts in 10 minutes, then it stops). `recovery.py`: `run.json` marks a run; one left over means a crash;
+    - `app.py` restarts itself when `config.toml` changes and nothing is in progress (`idle()`), and guards `tick()`;
+    - `config.save_user()` changes only the given keys and keeps comments; `cfg['_user']` lists the keys you set, which the governor never overrides;
+    - `machine.py` (P0-6 probe and fingerprint, `%LOCALAPPDATA%\MWB\machine\<fp>.toml`), `effort.py` (governor, E1–E4 per feature, every 30 s), `ui/setup.py` (setup screen, opens when `[effort] chosen` is false), `ui/settings.py` (Settings window), `ui/style.py`;
+    - `art.SKINS`: capsule, dot, bars, ring, wave, orb, mic, pixel (`[indicator] skin`);
+    - `skills/forget.py`: forget a meeting or a day; the journal file goes to the Recycle Bin;
+    - `tools/build_portable.py` writes `dist\MWB-portable` (gitignored), copying Python from `.venv`'s base; it downloads nothing.
+    - Windows that take the focus (setup, settings) must not be opened in tests while the user is typing.
 - **Meeting speech** uses whisper-cli (AI-App's build), started once per 22–28 s piece, at below-normal priority.
   - Not whisper-server, which held 2.2 GB. whisper-cli peaks at 0.79 GB and returns it when it exits.
   - Pieces are WAV files in `%LOCALAPPDATA%\MWB\audio\m<id>`, deleted once transcribed.

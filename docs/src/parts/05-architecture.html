@@ -29,7 +29,7 @@
 <tr><th scope="row" class="mono">llama-server.exe</th><td>Only when the API can't be reached, or for a skill set to local-only; exits 5 minutes after its last job on Lean. Batch work uses it only on mains power with a calm CPU</td><td class="nw">1.3 GB (2B), 2.4 GB (4B) <span class="tag meas">measured</span></td><td>The local fallback: Qwen3.5 2B, or 4B for code and the journal when the speech worker is closed, from Tools\llamacpp\models, memory-mapped, thinking off. Same OpenAI-compatible contract as the API, on a random port with a key of its own.</td></tr>
 <tr><th scope="row" class="mono">Indicator and results<br>(layered window, in core)</th><td>The pill whenever it is shown; the result panel while an answer, email, code or rewrite result is open</td><td class="nw">~10–15 MB <span class="tag est">estimate</span></td><td>The Capsule pill at the bottom centre, and result panels that rise out of it, with the text streaming in and Copy, Insert or Replace in the footer. Never takes the keyboard focus; Esc or × closes a panel (§13.3).</td></tr>
 <tr><th scope="row" class="mono">Cards<br>(Tkinter, in core)</th><td>While "Record this call?" is open</td><td class="nw">~15 MB <span class="tag est">estimate</span></td><td>A small window on a Tk thread of its own, at the bottom right, that never takes the keyboard focus.</td></tr>
-<tr><th scope="row" class="mono">Today page<br>(browser tab)</th><td>Only while you have it open</td><td class="nw">one tab</td><td>Local page served by the core on 127.0.0.1, only with this session's token: meetings, transcripts, notes, action items, labels with one-click correction, and search. The journal joins it in Phase 4. The server stops after 30 idle minutes.</td></tr>
+<tr><th scope="row" class="mono">Today page<br>(browser tab)</th><td>Only while you have it open</td><td class="nw">one tab</td><td>Local page served by the core on 127.0.0.1, only with this session's token: meetings, transcripts, notes, action items, labels with one-click correction, search, and the journal, with a page for each day at <code>/journal/&lt;day&gt;</code>. The server stops after 30 idle minutes.</td></tr>
 </tbody></table></div>
 
 <h3><span class="n">8.4</span>Interfaces</h3>
@@ -67,7 +67,7 @@ POST /v1/chat/completions
 <tbody>
 <tr><th scope="row">Interactive</th><td>Dictation, and rewrite, email and code results</td><td>Runs at once with 4 threads. May pause background work for a few seconds.</td></tr>
 <tr><th scope="row">Background</th><td>Meeting transcription during a call</td><td>whisper-cli, 2 threads, below-normal priority, and only on mains power. If the CPU stays above 80 % for 30 s, or the laptop is on battery, the pieces wait on disk and are transcribed after the call with 4 threads. Below 0.8 GB free, they wait for memory.</td></tr>
-<tr><th scope="row">Batch</th><td>Meeting notes and labels; the journal from Phase 4</td><td>One job at a time. Through the API at any time. The local model takes batch work only on AC power with the CPU under 60 %; otherwise the job waits and is tried again every 10 minutes.</td></tr>
+<tr><th scope="row">Batch</th><td>Meeting notes and labels; the journal</td><td>One job at a time. Through the API at any time. The local model takes batch work only on AC power with the CPU under 60 %; otherwise the job waits and is tried again every 10 minutes (the journal: every 15 minutes, then the facts alone after the third try).</td></tr>
 </tbody></table></div>
 
 <h3><span class="n">8.6</span>The running loop</h3>
@@ -88,7 +88,7 @@ POST /v1/chat/completions
 <tr><th scope="row">Double-tap watch</th><td>Every 15 ms, reading only Caps Lock and Alt</td><td>~0 % CPU</td></tr>
 <tr><th scope="row">Meeting detector</th><td>Every 5 s</td><td>microseconds</td></tr>
 <tr><th scope="row">Memory check</th><td>Every 10 s: under 1 GB free for 30 s stops the idle speech worker</td><td>microseconds</td></tr>
-<tr><th scope="row">Activity sampler</th><td>Every 10 s, from Phase 4</td><td>microseconds</td></tr>
+<tr><th scope="row">Activity sampler</th><td>Every 10 s; one database row per stretch of the same app and project, its end written at most once a minute</td><td>microseconds</td></tr>
 <tr><th scope="row">Effort governor</th><td>Every 30 s, and on power changes, from Phase 5</td><td>microseconds</td></tr>
 <tr><th scope="row">Indicator</th><td>Redraws at 30 frames per second only while listening or working; otherwise one still image</td><td>≤ 2 % CPU while animating <span class="tag est">estimate</span></td></tr>
 <tr><th scope="row">Speech worker</th><td>From the moment you start talking until 15 idle minutes later</td><td>~1.0 GB while loaded</td></tr>
@@ -96,6 +96,6 @@ POST /v1/chat/completions
 <tr><th scope="row">Language worker</th><td>Only when the API can't be used; closes 5 minutes after the last job on Lean</td><td>1.3 GB (2B) or 2.4 GB (4B) while loaded</td></tr>
 <tr><th scope="row">Meeting speech</th><td>One whisper-cli run per 22–28 s piece, during or after a call</td><td>0.79 GB while it runs</td></tr>
 <tr><th scope="row">Sync check</th><td>Once a week, on mains power with a calm CPU</td><td>about 15 minutes, mostly the local model</td></tr>
-<tr><th scope="row">Journal</th><td>18:30, or when you ask, from Phase 4</td><td>a few minutes of CPU</td></tr>
+<tr><th scope="row">Journal</th><td>18:30, or when you ask</td><td>about 3 s through the API, git included <span class="tag meas">measured</span></td></tr>
 </tbody></table></div>
 </section>

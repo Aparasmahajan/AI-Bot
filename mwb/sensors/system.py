@@ -48,3 +48,11 @@ class CpuWatch:
 
     def busy(self):
         return self.high_since is not None and time.monotonic() - self.high_since >= self.for_s
+
+
+def battery():
+    """(on mains power, battery percent or None when there is no battery or Windows doesn't know)."""
+    s = _SPS()
+    kernel32.GetSystemPowerStatus(ctypes.byref(s))
+    mains = s.ACLineStatus == 1 or s.BatteryFlag == 128
+    return mains, (None if s.BatteryFlag == 128 or s.BatteryLifePercent == 255 else s.BatteryLifePercent)

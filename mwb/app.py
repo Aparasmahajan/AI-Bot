@@ -4,14 +4,17 @@ or a menu click. Heavy work goes to threads and to the speech worker process; th
   .venv\\Scripts\\pythonw.exe -m mwb        (or double-click "Start MWB.cmd")
 
 Phase 1: dictation by double-tapping Caps Lock or holding push-to-talk, the tray, the indicator, the speech worker
-and its memory guard, and the dictation history."""
+and its memory guard, and the dictation history. Phases 2 to 4 add meetings, understanding and the daily journal."""
 import ctypes, ctypes.wintypes as wt, logging, logging.handlers, os, queue, subprocess, sys, threading, time
 
-from mwb import __version__, config, memory_guard, winapi
+from mwb import __version__, config, machine, memory_guard, recovery, winapi
+from mwb.effort import Governor
 from mwb.winapi import user32
 
 log = logging.getLogger('mwb')
 TICK_MS = 15
+EXIT_RESTART, EXIT_FAULT = 3, 2     # the watchdog starts a new core at once after 3, and counts 2 as a crash
+TICK_FAULTS = 20                    # this many failed ticks in a minute: let the watchdog start a fresh core
 user32.SetTimer.restype = ctypes.c_size_t
 user32.SetTimer.argtypes = [wt.HWND, ctypes.c_size_t, wt.UINT, ctypes.c_void_p]
 user32.GetMessageW.argtypes = [ctypes.POINTER(wt.MSG), wt.HWND, wt.UINT, wt.UINT]
@@ -71,7 +74,9 @@ class App:
         from mwb.llm.router import Router
         from mwb.skills.assist import Assist
         from mwb.skills.meeting import Meetings
+        from mwb.skills.journal import Journal
         from mwb.skills.notes import Understanding
+        from mwb.sensors.activity import ActivityWatch
         from mwb.store.db import Store
         from mwb.supervisor import SpeechWorker
         from mwb.ui.cards import Cards
@@ -80,25 +85,39 @@ class App:
         from mwb.ui.tray import Tray
 
         self.HoldWatch = HoldWatch
+        self.governor = None                # set up below, once the settings are read
         self.tid = ctypes.windll.kernel32.GetCurrentThreadId()
         self.inbox = queue.Queue()
         self.cfg = cfg = config.load()
         self.logs = setup_logging()
         log.info('MWB %s starting (pid %d, %.1f GB free)', __version__, os.getpid(), winapi.free_gb())
+        self.crashed = recovery.begin()
+        if self.crashed is not None:
+            log.warning('the last run did not stop cleanly (started %s)', self.crashed.get('started', '?'))
+        self.exit_code = 0
+        self.faults = []
+        self.settings_mtime = self._settings_mtime()
+        self.next_settings_check = time.monotonic() + 5
         if cfg['_problem']:
             log.warning('settings file not used: %s', cfg['_problem'])
+        self.governor = Governor(cfg)
+        self.machine_fp, self.machine_mtime = None, None
 
         self.hotkeys = Hotkeys()
         names = {name: self.hotkeys.register(name, cfg['hotkeys'][name])
-                 for name in ('dictate', 'pause', 'quit', 'meeting', 'today', 'rewrite', 'email', 'code')}
+                 for name in ('dictate', 'pause', 'quit', 'meeting', 'today', 'rewrite', 'email', 'code', 'note',
+                              'journal')}
         self.store = Store()
         self.indicator = Indicator(cfg)
         self.tray = Tray(self.post, {
             'copy_last': self.copy_last, 'toggle_indicator': self.toggle_indicator, 'toggle_pause': self.toggle_pause,
             'api_key': self.open_api_key, 'settings': self.open_settings, 'logs': self.open_logs, 'quit': self.quit,
             'meeting': self.toggle_meeting, 'today': self.open_today, 'import': self.import_transcript,
+            'journal': self.write_journal, 'journal_folder': self.open_journal_folder,
+            'settings_window': self.open_settings_window, 'setup': self.open_setup, 'restart': self.restart_now,
         }, {k: v and pretty(v) for k, v in names.items()})
         self.tray.indicator_on = self.indicator.visible
+        self.tray.effort = self.governor.status
         self.ui = UI(self.indicator, self.tray, self.post, {k: v and pretty(v) for k, v in names.items()})
         self.worker = SpeechWorker(cfg, on_state=self.on_worker)
         test_audio = os.environ.get('MWB_TEST_AUDIO')     # tests only: a WAV file plays in place of the mic
@@ -127,12 +146,20 @@ class App:
         self.today.understanding = self.understanding
         self.assist = Assist(cfg, self.router, self.cards, self.ui, self.store)
         self.dictation.assist = self.assist
+        self.activity = ActivityWatch(self.store, cfg)
+        self.journal = Journal(cfg, self.store, self.router, self.ui)
+        self.journal.on_ready = lambda day, manual: manual and self.post(lambda: self.today.open(f'/journal/{day}'))
+        self.today.journal = self.journal
+        self.next_journal_check = time.monotonic() + 60
         self.command = None                 # (name, HoldWatch, started voice?) while a command key is down
         self.card_esc = False
         self.running = True
         if not names['dictate']:
             self.post(lambda: self.tray.notify('No push-to-talk shortcut could be registered; double-tap Caps Lock '
                                                'to talk.'))
+        if self.crashed is not None:
+            text = recovery.message(self.crashed, self.meetings.recovered)
+            self.post(lambda: self.tray.notify(text))
 
     # ---- the loop --------------------------------------------------------------------------------------------
 
@@ -152,11 +179,16 @@ class App:
                 log.info('speech loads on the first dictation (%.1f GB free now)', free)
         threading.Thread(target=self._warm_mic, daemon=True, name='mic-warm').start()
         threading.Thread(target=self._warm_focus, daemon=True, name='focus-warm').start()
+        threading.Thread(target=self._find_repos, daemon=True, name='repos').start()
+        threading.Thread(target=self._machine_check, daemon=True, name='machine').start()
         user32.SetTimer(None, 0, TICK_MS, None)
         msg = wt.MSG()
         while self.running and user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
             if msg.message == winapi.WM_TIMER:
-                self.tick()
+                try:
+                    self.tick()
+                except Exception:
+                    self._tick_fault()
             elif msg.message == winapi.WM_HOTKEY:
                 self.on_hotkey(self.hotkeys.name_of(msg.wParam))
             elif msg.message == winapi.WM_APP:
@@ -177,6 +209,97 @@ class App:
             focus.in_text_box(10)
         except Exception as e:
             log.info('focus check not ready: %s', type(e).__name__)
+
+    def _tick_fault(self):
+        """One failed tick is logged and the loop goes on; a stream of them means the core is stuck in a bad state,
+        so it ends with EXIT_FAULT and the watchdog starts a fresh one."""
+        log.exception('tick failed')
+        now = time.monotonic()
+        self.faults = [t for t in self.faults if now - t < 60] + [now]
+        if len(self.faults) >= TICK_FAULTS:
+            log.critical('%d failed ticks in a minute; ending so the watchdog can start MWB again', len(self.faults))
+            self.exit_code = EXIT_FAULT
+            self.quit()
+
+    def _settings_mtime(self):
+        try:
+            return config.USER_FILE.stat().st_mtime
+        except OSError:
+            return None
+
+    def idle(self):
+        """Nothing in progress that a restart would interrupt."""
+        return (self.dictation.state == 'idle' and not self.command and not self.meetings.current
+                and not self.journal.lock.locked() and not self.cards.card_open)
+
+    def check_settings(self):
+        """Your settings file changed (the Settings window, or your own edit): start again to use it, once nothing
+        is in progress. A file that doesn't read is reported instead, and the current settings stay."""
+        m = self._settings_mtime()
+        if m == self.settings_mtime or not self.idle():
+            return
+        self.settings_mtime = m
+        problem = config.load()['_problem']
+        if problem:
+            self.tray.notify(f'Your settings file has a mistake, so MWB kept its current settings: {problem}'[:250])
+            return
+        self.restart('settings changed')
+
+    def restart(self, why):
+        log.info('starting again: %s', why)
+        self.exit_code = EXIT_RESTART
+        if not os.environ.get('MWB_WATCHDOG'):          # started without the watchdog: one takes over once we exit
+            subprocess.Popen([self._pythonw(), '-m', 'mwb.watchdog', '--after', str(os.getpid())],
+                             cwd=str(config.HERE.parents[1]))
+        self.quit()
+
+    def _machine_check(self):
+        """Which machine is this? A new fingerprint (another laptop, or more memory) gets a first machine file with
+        the suggested level, and the setup screen opens so you can choose (§12.6)."""
+        try:
+            hw = machine.probe()
+        except RuntimeError as e:
+            log.warning('machine check: %s', e)
+            return
+        fp = machine.fingerprint(hw)
+        data = machine.load(fp)
+        if data is None:
+            log.info('a new machine (%s): suggesting %s', fp, machine.suggested(machine.profile_of(hw)))
+            data = machine.new(hw, fp, self.cfg.get('effort_preference', 'suggested'))
+            machine.save(fp, data)
+        choice = machine.effort_of(data)
+        self.post(lambda: self._use_machine(fp, choice, hw.get('cores')))
+        if not choice['chosen']:
+            self.post(self.open_setup)
+
+    def _use_machine(self, fp, choice, cores=None):
+        self.machine_fp = fp
+        try:
+            self.machine_mtime = machine.path_of(fp).stat().st_mtime
+        except OSError:
+            self.machine_mtime = None
+        self.governor.set_choice(choice, cores)
+        log.info('machine %s: %s', fp, self.governor.status())
+
+    def _check_machine_file(self):
+        """The setup screen saved a new choice: use it now."""
+        if not self.machine_fp:
+            return
+        try:
+            m = machine.path_of(self.machine_fp).stat().st_mtime
+        except OSError:
+            return
+        if m != self.machine_mtime:
+            data = machine.load(self.machine_fp)
+            if data:
+                self._use_machine(self.machine_fp, machine.effort_of(data), (data.get('hardware') or {}).get('cores'))
+
+    def _find_repos(self):
+        """The repository names, so the activity sampler can tell which project a window belongs to."""
+        try:
+            self.activity.set_repos(self.journal.repo_names())
+        except Exception:
+            log.exception('repository scan failed')
 
     def maybe_sync_check(self):
         """Once a week on mains power with a calm CPU: P0-4's ten saved prompts through both routes (§12.7). The
@@ -253,6 +376,18 @@ class App:
                 self.hotkeys.unregister('cancel')
                 self.esc = False
         self.indicator.tick(now)
+        self.activity.tick(now, self.dictation.paused)
+        if now >= self.next_settings_check:
+            self.next_settings_check = now + 5
+            self.check_settings()
+            self._check_machine_file()
+        self.governor.tick(now)
+        if now >= self.next_journal_check:
+            self.next_journal_check = now + 60
+            try:
+                self.journal.maybe_run()
+            except Exception:
+                log.exception('journal check failed')
         if now >= self.next_meeting_poll:
             self.next_meeting_poll = now + 5
             try:
@@ -280,7 +415,9 @@ class App:
             d.cancel('Esc')
         elif name == 'close_card':
             self.cards.close_cards()
-        elif name in ('rewrite', 'email', 'code'):
+        elif name == 'journal':
+            self.write_journal()
+        elif name in ('rewrite', 'email', 'code', 'note'):
             if d.state == 'idle' and not self.command:
                 self.command = [name, self.HoldWatch(self.hotkeys.held_keys(name)), False]
         elif name == 'pause':
@@ -297,7 +434,8 @@ class App:
         name, hold, voice = self.command
         actions = {'email': (self.assist.email_explain, self.assist.email_draft),
                    'code': (self.assist.code_explain, self.assist.code_write),
-                   'rewrite': (self._rewrite_hint, self.assist.rewrite)}
+                   'rewrite': (self._rewrite_hint, self.assist.rewrite),
+                   'note': (self._note_hint, self._note)}
         press, spoken = actions[name]
         if not voice and hold.held_s >= 0.35 and not hold.released():
             _, app = winapi.foreground_app()
@@ -319,6 +457,15 @@ class App:
         card = self.cards.result('Rewrite')
         card.set_text('Select some text, then hold the keys and say how to change it: "shorter", "more formal", '
                       '"bullet points", "translate to Hindi".')
+
+    def _note_hint(self):
+        card = self.cards.result('Voice note')
+        card.set_text("Hold the keys and say your note while holding: it goes into today's journal, under Notes.")
+
+    def _note(self, text):
+        """From the command's thread: save the note, then show the tick once the dictation has finished."""
+        if self.journal.add_note(text):
+            self.post(lambda: self.indicator.set_state('done', 'Noted'))
 
     def start_dictation(self, trigger):
         _, app = winapi.foreground_app()
@@ -358,6 +505,14 @@ class App:
     def open_today(self):
         self.today.open()
 
+    def write_journal(self):
+        threading.Thread(target=self.journal.write, kwargs={'manual': True}, daemon=True, name='journal').start()
+
+    def open_journal_folder(self):
+        folder = self.journal.folder()
+        folder.mkdir(parents=True, exist_ok=True)
+        os.startfile(folder)
+
     def import_transcript(self):
         def chosen(path):
             if path:
@@ -387,6 +542,19 @@ class App:
                 '#\n# Example:\n# [indicator]\n# size = "medium"\n', encoding='utf-8')
         os.startfile(config.USER_FILE)
 
+    def open_settings_window(self):
+        subprocess.Popen([self._pythonw(), '-m', 'mwb.ui.settings'], cwd=str(config.HERE.parents[1]))
+
+    def open_setup(self):
+        subprocess.Popen([self._pythonw(), '-m', 'mwb.ui.setup'], cwd=str(config.HERE.parents[1]))
+
+    def restart_now(self):
+        if self.idle():
+            self.restart('you asked')
+        else:
+            self.tray.notify('MWB will start again once the current dictation, call or journal is finished.')
+            self.settings_mtime = None                  # check_settings() restarts it when idle
+
     def open_logs(self):
         os.startfile(self.logs)
 
@@ -398,6 +566,7 @@ class App:
     def shutdown(self):
         if self.dictation.state == 'listening':
             self.dictation.cancel('quit')
+        self.activity.flush()
         self.meetings.close()
         self.understanding.close()
         self.router.close()
@@ -409,6 +578,8 @@ class App:
         self.worker.stop('MWB quit')
         self.mic.close()
         self.store.close()
+        if self.exit_code != EXIT_FAULT:                # a fault counts as a crash at the next start
+            recovery.end()
         log.info('MWB stopped')
 
 
@@ -420,5 +591,6 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('MWB.Core')
     except (AttributeError, OSError):
         pass
-    App().run()
-    return 0
+    app = App()
+    app.run()
+    return app.exit_code

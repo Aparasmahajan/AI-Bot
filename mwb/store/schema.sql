@@ -126,3 +126,35 @@ CREATE TABLE IF NOT EXISTS api_log (
 );
 
 UPDATE meta SET value = '3' WHERE key = 'schema' AND value < '3';
+
+-- Phase 4: the daily journal (design §9.6)
+CREATE TABLE IF NOT EXISTS activity (
+    id          INTEGER PRIMARY KEY,
+    started     TEXT NOT NULL,          -- local time, ISO 8601
+    ended       TEXT NOT NULL,
+    app         TEXT,                   -- program in front, e.g. Code.exe; empty for apps on the denylist
+    project     TEXT,                   -- worked out from the title when sampled; the title itself is not kept
+    idle        INTEGER DEFAULT 0       -- 5 minutes without keyboard or mouse, or the screen locked
+);
+CREATE INDEX IF NOT EXISTS activity_started ON activity (started);
+
+CREATE TABLE IF NOT EXISTS journal_notes (
+    id          INTEGER PRIMARY KEY,
+    ts          TEXT NOT NULL,
+    text        TEXT NOT NULL           -- a voice note (Ctrl+Alt+N), for today's journal
+);
+CREATE INDEX IF NOT EXISTS journal_notes_ts ON journal_notes (ts);
+
+CREATE TABLE IF NOT EXISTS journals (
+    day         TEXT PRIMARY KEY,       -- the working day, 06:00 to 06:00
+    made        TEXT,
+    path        TEXT,                   -- the Markdown file
+    markdown    TEXT,
+    route       TEXT,                   -- api | local | none (facts only)
+    model       TEXT,
+    seconds     REAL,
+    dropped     INTEGER,                -- sentences the checker removed
+    file_hash   TEXT                    -- what MWB wrote, to notice your edits
+);
+
+UPDATE meta SET value = '4' WHERE key = 'schema' AND value < '4';

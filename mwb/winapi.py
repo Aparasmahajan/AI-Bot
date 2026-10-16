@@ -289,3 +289,20 @@ def end_with_me(proc):
         kernel32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info))
         _JOB = job
     return bool(kernel32.AssignProcessToJobObject(_JOB, wt.HANDLE(int(proc._handle))))
+
+
+# ---- the Recycle Bin ---------------------------------------------------------------------------------------------
+
+class _SHFILEOP(ctypes.Structure):
+    _fields_ = [('hwnd', wt.HWND), ('wFunc', wt.UINT), ('pFrom', wt.LPCWSTR), ('pTo', wt.LPCWSTR),
+                ('fFlags', ctypes.c_ushort), ('fAnyOperationsAborted', wt.BOOL), ('hNameMappings', ctypes.c_void_p),
+                ('lpszProgressTitle', wt.LPCWSTR)]
+
+
+def recycle(path):
+    """Move a file or folder to the Recycle Bin, quietly, so it can be restored. True if it went."""
+    op = _SHFILEOP()
+    op.wFunc = 3                                            # FO_DELETE
+    op.pFrom = str(path) + '\0'                             # the list ends with a second NUL
+    op.fFlags = 0x40 | 0x10 | 0x4 | 0x400                   # ALLOWUNDO, NOCONFIRMATION, SILENT, NOERRORUI
+    return ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0 and not op.fAnyOperationsAborted

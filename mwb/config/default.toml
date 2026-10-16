@@ -12,6 +12,8 @@ today = ["ctrl+alt+j"]              # the Today page: meetings and transcripts
 rewrite = ["ctrl+alt+r"]            # hold and say how to change the selected text
 email = ["ctrl+alt+e"]              # press: explain the selected email; hold and speak: draft a reply
 code = ["ctrl+alt+k"]               # press: explain the selected code; hold and speak: write code
+note = ["ctrl+alt+n"]               # hold and speak: a voice note for today's journal
+journal = ["ctrl+alt+shift+j"]      # write today's journal now
 quit = ["ctrl+alt+shift+w"]
 
 [triggers]
@@ -23,7 +25,7 @@ max_s = 300                         # a dictation never runs longer than this
 [indicator]
 show = true
 toggle = "double-tap alt"           # or "none"
-skin = "capsule"                    # Phase 1 has the Capsule; the other seven come in Phase 5
+skin = "capsule"                    # capsule | dot | bars | ring | wave | orb | mic | pixel
 visible = "always"                  # or "while-active"
 size = "small"                      # small | medium | large
 opacity = 0.85
@@ -54,6 +56,7 @@ language = "auto"                   # whisper small hears English, Hindi and Hin
 whisper_cli = '%USERPROFILE%\Documents\New folder\AI-App\addon\whisper-blas-bin-x64\Release\whisper-cli.exe'
 whisper_model = '%LOCALAPPDATA%\MWB\models\ggml-small.bin'
 model_gb = 0.8                      # whisper small's working set, measured 14 Oct 2026
+live = true                         # transcribe during the call (on mains power with a calm CPU)
 live_threads = 2                    # during a call, on mains power, at low priority (§11.4)
 after_threads = 4                   # after the call, to have the transcript within about 2 minutes
 piece_min_s = 22                    # whisper works on 30 s windows: a piece of 22-28 s costs no more than a 4 s one
@@ -78,6 +81,18 @@ local_model_big = "Qwen3.5-4B-Q4_K_M.gguf"   # code and the journal: 2.42 GB
 local_big_for = ["code", "journal"]
 local_threads = 4
 local_idle_min = 5                  # the local model exits 5 minutes after its last job on Lean (§11.2)
+
+[journal]
+# The end-of-day journal (§9.6): commits, meetings, time per project, notes and tomorrow, as a Markdown file you own.
+time = "18:30"                      # written then, or when you press Ctrl+Alt+Shift+J
+folder = ""                         # empty: Documents\MWB\journal
+repo_roots = ['%USERPROFILE%\Documents\New folder']    # git repositories under these folders
+git_author = "auto"                 # your commits: git config --global user.email
+activity_sample_s = 10              # the app in front, every 10 s; the window title only picks the project
+denylist = ["*bank*", "*whatsapp*", "*netbanking*", "*password*", "*private*", "*incognito*", "*inprivate*"]
+email = "off"                       # off | classic-outlook: sent-mail subjects and people, never bodies. Off until
+                                    # you decide, since your work mail is in Outlook on the web (TODO.md)
+manager_email = ""                  # put in the To line of "Open as Outlook draft"; MWB never sends
 
 [assist]
 wake_word = "MWB"                   # "MWB, what's my next meeting?" asks instead of writing

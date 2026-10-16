@@ -105,3 +105,23 @@ Question: {question}
 FACTS_RULE = ("Use only the facts below for anything about my day, meetings, action items or dictations, and cite "
               "each one with its tag in square brackets, like [M3 10:04] or [A2]. If the facts don't answer it, say "
               "so. For general knowledge you may answer from what you know.")
+
+# ---- the journal (§9.6) -----------------------------------------------------------------------------------------
+
+JOURNAL = """Write the prose parts of my end-of-day work journal for {day}. The facts below are complete and
+correct; the tables of commits, meetings and times are added by code, so don't repeat them as lists.
+Rules:
+- Every sentence ends with one or more tags of the facts it is based on, in square brackets, like [c:ce945ae] or
+  [m:2] or [a:MTMS]. A sentence without a tag will be deleted.
+- Never write a commit ID, number, time, name or date that is not in the facts. Don't add up numbers.
+- Write as "you" ("You fixed ..."). Plain, specific English; no filler, no praise.
+- Blockers: only problems the facts actually mention (meeting notes, voice notes, open action items).
+- Tomorrow: only from the calendar, open action items and voice notes.
+Reply with JSON only:
+{{"summary": ["2 or 3 sentences on the day"],
+ "projects": [{{"project": "a project name from the facts", "sentences": ["1 or 2 sentences"]}}],
+ "blockers": ["sentences, or none"],
+ "tomorrow": ["sentences, or none"]}}
+
+Facts:
+{facts}"""

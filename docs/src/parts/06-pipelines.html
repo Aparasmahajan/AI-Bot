@@ -137,35 +137,41 @@ sent = ns.GetDefaultFolder(5).Items   <span class="c"># 5 = Sent Items: journal 
 <p class="small">Through the API, gpt-oss-120b explains code and suggests optimisations quickly. The local fallback for code is Qwen3.5 4B with thinking off; it explains code well and handles small refactors. For large changes, Claude Code or Copilot in the editor is the better tool. On the Performance profile a 30B mixture-of-experts coding model runs locally.</p>
 
 <h3><span class="n">9.6</span>End-of-day journal</h3>
-<p class="small"><i>Not built yet:</i> the journal is Phase 4. The meetings, notes and action items it uses already exist. The sent-mail list depends on how MWB may read your work mail (decision 4).</p>
+<p>At 18:30 MWB writes a journal of your working day: commits, meetings, time per project, notes, open items and tomorrow's calendar, as a Markdown file you own. Code gathers and renders every fact; the model writes only the prose around them, and a checker removes any sentence it cannot tie to a fact. If no model answers, the journal is still written, with the facts alone.</p>
+<p class="small"><b>As built (Rev G).</b> Phase 4 was built and tested on 16 October (<code>skills/journal.py</code>, <code>sensors/activity.py</code>, <code>collectors/git.py</code>). Today's journal through Groq took 2.7–3.2 s <span class="tag meas">measured</span>, of which git took 1.9 s for 35 repositories <span class="tag meas">measured</span>. Sent mail is left out for now (<code>email = "off"</code>): your work mail is only in Outlook on the web, so it waits for your choice on how MWB may read it (decision 4).</p>
 <figure class="fig">
   <div class="fig-frame">{{fig:jnl}}</div>
-  <figcaption><b>Figure 9.3</b>Journal pipeline. The language model never writes a number, a name or a SHA on its own; those come from the facts table, and the validator checks every citation.</figcaption>
+  <figcaption><b>Figure 9.3</b>Journal pipeline as built. Code collects the facts and gives each one a tag. The tables are rendered from the facts directly; the model sees the same tagged lines and writes only the prose, which the checker filters before it joins the tables. The model never supplies a number, a name or a SHA on its own.</figcaption>
 </figure>
 <div class="tbl dense"><table>
-<thead><tr><th>Source</th><th>What MWB records</th><th>How</th></tr></thead>
+<thead><tr><th>Source</th><th>What MWB uses</th><th>How</th></tr></thead>
 <tbody>
-<tr><th scope="row">Git</th><td>Today's commits: SHA, repo, branch, time, message, files, lines added and removed. Uncommitted changes.</td><td><code>git log</code> per repo under the scan roots (27 found today), <code>git status --porcelain</code></td></tr>
-<tr><th scope="row">Meetings</th><td>Title, time, duration, label, notes, action items</td><td>From §9.3</td></tr>
-<tr><th scope="row">Outlook</th><td>Subjects and people of sent mail; counts of received and flagged</td><td>COM, metadata only</td></tr>
-<tr><th scope="row">Dictation and notes</th><td>Count, words, voice notes</td><td>History table, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></td></tr>
-<tr><th scope="row">Active window</th><td>App and window title every 10 s; idle after 5 minutes without input</td><td><code>GetForegroundWindow</code>, <code>GetWindowText</code>, <code>GetLastInputInfo</code></td></tr>
-<tr><th scope="row">Calendar</th><td>Tomorrow's meetings</td><td>COM, Calendar folder</td></tr>
+<tr><th scope="row">Git</th><td>The day's commits by your git email, on every branch: SHA, repository, branch, time, message, files, lines added and removed. For repositories with commits, how many files are not committed yet.</td><td><code>git log</code> in each repository under <code>repo_roots</code> (35 found on 16 October), four at a time, then <code>git status --porcelain</code>. Read fresh each time and not stored; nothing in a repository is changed.</td></tr>
+<tr><th scope="row">Meetings</th><td>Title, start, duration, label, summary, decisions and action items; your open action items from any day</td><td>MWB's own tables (§9.3)</td></tr>
+<tr><th scope="row">Active window</th><td>Every 10 s, the app in front and its project. Away after 5 minutes without keyboard or mouse, or with the screen locked.</td><td><code>GetForegroundWindow</code>, <code>GetWindowText</code> (only to pick the project), <code>GetLastInputInfo</code>; the <code>activity</code> table</td></tr>
+<tr><th scope="row">Dictation and notes</th><td>How many dictations and words; voice notes</td><td>The dictation history; <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> into <code>journal_notes</code></td></tr>
+<tr><th scope="row">Sent mail</th><td>Subjects and recipients of sent mail, and how many arrived; never bodies. <i>Off until decision 4.</i></td><td>Classic Outlook through COM, when <code>email = "classic-outlook"</code></td></tr>
+<tr><th scope="row">Calendar</th><td>Tomorrow's meetings, 06:00 to 06:00</td><td>Classic Outlook through COM, Calendar folder</td></tr>
 </tbody></table></div>
 <div class="code-h">collectors/git.py runs this in each repository (shown as PowerShell)</div>
-<pre><code>git -C "&lt;repo&gt;" log --all --since="&lt;day start, 06:00&gt;" --author="&lt;your git email&gt;" `
-    --date=iso-strict --format="%H%x1f%h%x1f%ad%x1f%D%x1f%s" --shortstat</code></pre>
+<pre><code>git -C "&lt;repo&gt;" log --all --source --since="&lt;06:00&gt;" --until="&lt;now, or 06:00 next day&gt;" `
+    --author="&lt;your git email&gt;" --date=iso-strict --format="%x1e%H%x1f%h%x1f%cd%x1f%S%x1f%s" --shortstat</code></pre>
 <ul>
-  <li><b>Facts are rendered by code:</b> the commit table, the meeting list with durations and labels, time per project, and counts.</li>
-  <li><b>The model writes only</b> the summary, the per-project narrative, blockers and tomorrow's plan.</li>
-  <li><b>Every sentence must cite</b> at least one event ID. A validator drops sentences without a valid citation and checks each SHA against git, so a made-up commit ID cannot reach the report.</li>
   <li><b>The day runs from 06:00 to 06:00</b>, so late-night commits, like the 23:47 one below, land on the right day.</li>
-  <li><b>Projects</b> come from repo paths and window titles, for example <code>- MTMS - Visual Studio Code</code> maps to MTMS.</li>
+  <li><b>Facts are rendered by code:</b> the commit table, meetings with their labels, decisions and your actions, time per project, the working day and time away, dictation counts, voice notes, open items and tomorrow's calendar.</li>
+  <li><b>The model writes only</b> two or three summary sentences, one or two sentences per project, blockers and tomorrow's plan, as JSON. It sees each fact as a tagged line: <code>c:</code> a commit, <code>m:</code> a meeting, <code>a:</code> time on a project, <code>d:</code> dictation, <code>n:</code> a voice note, <code>e:</code> sent mail, <code>i:</code> an open action item, <code>t:</code> tomorrow's calendar. Every sentence must end with the tags of the facts it uses. Through the API it is gpt-oss-120b; the local fallback is Qwen3.5 4B.</li>
+  <li><b>The checker</b> keeps a tag only if it is one of the day's tags and its fact shares a word or a number with the sentence. It then drops the sentence if no tag is left, if it names a commit ID that git didn't report, or if it has a number that isn't in the facts (spelled-out numbers such as "three" count). A project paragraph for a name that isn't in the facts is dropped too. The footer says how many sentences were removed, so a made-up SHA or count cannot reach the journal.</li>
+  <li><b>The facts-only fallback.</b> A run at 18:30 uses the API, or the local model only on mains power with the CPU under 60 %. If neither answers, it tries again every 15 minutes, and after the third try writes the facts alone. When you ask for the journal, the local model may run at once, and if nothing answers the facts-only journal is written straight away.</li>
+  <li><b>Projects</b> come from the window title: a repository's name in it (MTMS in <code>Invoice.java - MTMS - Visual Studio Code</code>), the folder name in VS Code's title, or otherwise Coding, Email, Chat, Browsing, Terminal or Other. Projects under 5 minutes go into Other. Meeting time counts as Meetings, not as the call app. Time away is the rest of the working day, so the rows add up to it exactly.</li>
+  <li><b>Window titles are used only to pick the project.</b> They are never stored or logged; the <code>activity</code> table keeps the app and the project. Apps and titles matching the denylist are kept as "Private", with no app name, and nothing is recorded while MWB is paused.</li>
+  <li><b>When.</b> At 18:30; or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>, the Today page or the tray, which open the journal when it's done. If the laptop was off at 18:30, yesterday's journal is written the next time MWB runs, as long as that day had activity or a meeting. A notification says "Your journal for Monday is ready. Press Ctrl+Alt+J to open it."</li>
+  <li><b>Your file.</b> <code>Documents\MWB\journal\YYYY-MM-DD.md</code>, in the Documents folder wherever Windows keeps it. MWB records the SHA-256 of what it wrote; if you have edited the file, a later run writes <code>YYYY-MM-DD (new HHMM).md</code> beside it instead of over it.</li>
+  <li><b>On the Today page</b> a Journal section lists the last ten days, and <code>/journal/&lt;day&gt;</code> shows one, with the tags as blue chips, Copy Markdown, Write again, and Open as Outlook draft. The draft has the tags removed and your manager's address (<code>manager_email</code>) in the To line; it opens for you to check and send. MWB never sends it.</li>
 </ul>
 
 <figure class="fig">
 <div class="journal">
-  <div class="j-bar"><span>Documents\MWB\journal\2026-10-05.md</span><span>generated 18:30 · edited 0 times</span></div>
+  <div class="j-bar"><span>Documents\MWB\journal\2026-10-05.md</span><span>written 18:30 by MWB</span></div>
   <div class="j-body">
     <h4>Monday, 5 October 2026</h4>
     <p>Most of the day went to MTMS: the invoice export fix and sprint planning.<span class="cite">m:2</span><span class="cite">a:MTMS</span> In the evening you shipped the glass layout and two rounds of UI polish in AI-App.<span class="cite">c:a445845</span><span class="cite">c:ce945ae</span> One blocker is still open: access to the staging Kafka cluster.<span class="cite">m:1</span></p>
@@ -193,7 +199,7 @@ sent = ns.GetDefaultFolder(5).Items   <span class="c"># 5 = Sent Items: journal 
       <div class="bar-row"><span>AI-App</span><span class="track"><span class="fill" style="width:30%"></span></span><span class="v">1 h 05 m</span></div>
       <div class="bar-row"><span>Email</span><span class="track"><span class="fill" style="width:23%"></span></span><span class="v">50 m</span></div>
     </div>
-    <h5>Email · 6 sent · 23 received · 2 drafts by MWB</h5>
+    <h5>Email · 6 sent · 23 received</h5>
     <p>Sent: Re: Staging Kafka access · Demo build for Wednesday · Invoice export fix deployed to QA, and 3 more.</p>
     <h5>Open items</h5>
     <ul><li>Staging Kafka access, blocked since Friday.<span class="cite">m:1</span></li><li>Demo build by Wednesday evening.<span class="cite">m:2</span></li></ul>
@@ -201,7 +207,7 @@ sent = ns.GetDefaultFolder(5).Items   <span class="c"># 5 = Sent Items: journal 
     <p><span class="mono">10:00</span> Design review · <span class="mono">16:00</span> Demo dry run</p>
   </div>
 </div>
-<figcaption><b>Figure 9.4</b>Sample journal. The commits are real, taken from AI-App's git log for 5 October 2026. Meetings, email and project times are illustrative. Blue chips are the citations the validator checks: <code>c:</code> commit, <code>m:</code> meeting, <code>a:</code> activity.</figcaption>
+<figcaption><b>Figure 9.4</b>Sample journal. The commits are real, taken from AI-App's git log for 5 October 2026. Meetings, email and project times are illustrative. Blue chips are the citations the checker tested: <code>c:</code> commit, <code>m:</code> meeting, <code>a:</code> time on a project. The layout follows what <code>render()</code> writes, except that the file has a table where this sample draws bars.</figcaption>
 </figure>
 
 <h3><span class="n">9.7</span>Ask MWB: answers by voice</h3>
@@ -209,7 +215,7 @@ sent = ns.GetDefaultFolder(5).Items   <span class="c"># 5 = Sent Items: journal 
 <div class="tbl dense"><table>
 <thead><tr><th>You ask</th><th>Where the answer comes from</th></tr></thead>
 <tbody>
-<tr><td>"MWB, what did I commit today?"</td><td>The commits table, read by code, from Phase 4. The model only phrases the reply, and the SHAs are real.</td></tr>
+<tr><td>"MWB, what did I commit today?"</td><td>Your commits from git, read by code as the journal does. The model only phrases the reply, and the SHAs are real. <i>Not built yet:</i> answers don't read git yet; today's commits are in the journal (§9.6).</td></tr>
 <tr><td>"When is my next meeting, and who is in it?"</td><td>Your classic Outlook calendar for the next 12 hours, through COM</td></tr>
 <tr><td>"What did Priya say about the Kafka access?"</td><td>Full-text search over meeting transcripts, then a short summary with timestamps</td></tr>
 <tr><td>"What are my open action items?"</td><td>The action items table, with the dates worked out by code</td></tr>

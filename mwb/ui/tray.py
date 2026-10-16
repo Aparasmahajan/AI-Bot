@@ -16,7 +16,8 @@ class Tray:
         self.paused = False
         self.indicator_on = True
         self.recording = False
-        states = ('idle', 'listening', 'working', 'paused', 'loading', 'failed')
+        self.effort = lambda: 'effort'          # the core puts the governor's status line here
+        states =('idle', 'listening', 'working', 'paused', 'loading', 'failed')
         self.icons = {(s, r): art.tray_icon(s, 64, r) for s in states for r in (False, True)}
         self.icon = pystray.Icon('MWB', self.icons['idle', False], self._title(), menu=self._menu())
 
@@ -38,15 +39,20 @@ class Tray:
             pystray.MenuItem(f'Today page: meetings and transcripts ({k.get("today") or "no shortcut"})',
                              self._do('today'), default=True),
             pystray.MenuItem('Import a transcript…', self._do('import')),
+            pystray.MenuItem(f"Write today's journal now ({k.get('journal') or 'no shortcut'})", self._do('journal')),
+            pystray.MenuItem('Journal folder', self._do('journal_folder')),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem('Show indicator (double-tap Alt)', self._do('toggle_indicator'),
                              checked=lambda item: self.indicator_on),
             pystray.MenuItem(f'Pause ({k.get("pause") or "no shortcut"})', self._do('toggle_pause'),
                              checked=lambda item: self.paused),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem(lambda item: f'Performance: {self.effort()}…', self._do('setup')),
+            pystray.MenuItem('Settings…', self._do('settings_window')),
             pystray.MenuItem('Set API key…', self._do('api_key')),
             pystray.MenuItem('Settings file', self._do('settings')),
             pystray.MenuItem('Log folder', self._do('logs')),
+            pystray.MenuItem('Restart MWB', self._do('restart')),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(f'Quit MWB ({k.get("quit") or "no shortcut"})', self._do('quit')))
 

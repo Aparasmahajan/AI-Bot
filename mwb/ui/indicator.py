@@ -176,6 +176,7 @@ class Indicator:
         self.visible = bool(c['show'])
         self.always = c['visible'] == 'always'
         self.size = SIZES.get(c['size'], 1.0)
+        self.skin = c.get('skin', 'capsule') if c.get('skin') in art.SKINS else 'capsule'
         self.opacity = round(255 * min(1.0, max(0.4, float(c['opacity']))))
         self.live_words = bool(c['live_words'])
         self.hide_fullscreen = bool(c['hide_in_fullscreen'])
@@ -298,7 +299,7 @@ class Indicator:
             return
 
         moving = False
-        target = art.size_of(shown_state, label)
+        target = art.size_of(shown_state, label, self.skin)
         if self.pill_size is None:
             self.pill_size = target
         elif self.pill_size != target:
@@ -336,7 +337,7 @@ class Indicator:
             gaps.append(round((4 + 10 * (1 - self.panel_alpha)) * scale))  # it rises as it fades in, sinks as it goes
         if want_pill:
             pill_scale = self.size * scale
-            pill = art.capsule(shown_state, pill_scale, self.shown_level, now, self.pill_size, label)
+            pill = art.capsule(shown_state, pill_scale, self.shown_level, now, self.pill_size, label, self.skin)
             if self.recording:
                 pill = art.with_ring(pill, pill_scale)
             if self.live_words and words and shown_state in ('listening', 'working'):

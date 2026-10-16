@@ -46,6 +46,7 @@ class Meetings:
         self.wake = threading.Event()
         self.running = True
         self.languages = {}                 # meeting id -> Counter of what whisper heard
+        self.recovered = 0                  # meetings a crash interrupted, picked up at this start
         self.on_ready = None                # from Phase 3: notes and the label follow a ready transcript
         self.to_write = queue.Queue()       # pieces leave the audio threads at once; this thread writes them
         self._recover()
@@ -199,10 +200,21 @@ class Meetings:
     # ---- transcription ---------------------------------------------------------------------------------------
 
     def _recover(self):
-        """A crash during a call leaves the meeting 'recording' and its pieces on disk: finish them now."""
+        """A crash during a call leaves the meeting 'recording' and its pieces on disk: finish them now. The call
+        counts as ended when its last piece was written, not when MWB started again."""
         for m in self.store.meetings(200, status='recording'):
-            self.store.update_meeting(m['id'], status='transcribing', ended=m['ended'] or _now().isoformat())
+            self.store.update_meeting(m['id'], status='transcribing', ended=m['ended'] or self._last_heard(m))
+            self.recovered += 1
             log.info('meeting %d was interrupted; transcribing what was recorded', m['id'])
+
+    def _last_heard(self, m):
+        folder = AUDIO / f'm{m["id"]}'
+        times = [p.stat().st_mtime for p in folder.iterdir()] if folder.exists() else []
+        ends = [s[3] or s[2] for s in self.store.segments(m['id'])]
+        started = datetime.datetime.fromisoformat(m['started'])
+        when = max([started] + [datetime.datetime.fromtimestamp(t).replace(microsecond=0) for t in times] +
+                   [started + datetime.timedelta(seconds=round(e)) for e in ends])
+        return when.isoformat()
 
     def _next_piece(self):
         """(meeting id, path, live?) of the next piece to transcribe, oldest meeting first."""
@@ -227,8 +239,8 @@ class Meetings:
                 if not job:
                     break
                 mid, path, live = job
-                if live and not (system.on_mains() and not self.cpu.busy()):
-                    break                       # live only on mains with a calm CPU; the rest waits for the end
+                if live and not (self.m.get('live', True) and system.on_mains() and not self.cpu.busy()):
+                    break                       # live only on mains with a calm CPU (and not at effort E1)
                 if not self.whisper.memory_ok():
                     log.info('waiting for memory to transcribe (%.2f GB free)', winapi.free_gb())
                     break

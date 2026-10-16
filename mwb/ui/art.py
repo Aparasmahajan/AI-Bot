@@ -33,19 +33,99 @@ def _check(d, cx, cy, s, colour, width):
            joint='curve')
 
 
-def size_of(state, label=''):
+SKINS = ('capsule', 'dot', 'bars', 'ring', 'wave', 'orb', 'mic', 'pixel')      # the demo's eight (§13.3)
+MOVING = ('listening', 'working', 'loading')
+
+
+def size_of(state, label='', skin='capsule'):
     """The pill's size at scale 1 in a state; the indicator eases between sizes."""
-    if state in ('idle', 'paused'):
-        return 56, 12
     if state == 'done':
-        return (round(40 + font(12, True).getlength(label)), 26) if label else (80, 26)
-    return 110, 26
+        return (round(40 + font(12, True).getlength(label)), 26) if label else (80 if skin == 'capsule' else 44, 26)
+    if skin == 'capsule':
+        return (56, 12) if state in ('idle', 'paused') else (110, 26)
+    if state in ('idle', 'paused'):
+        return 40, 24
+    return (64, 26) if skin in ('bars', 'wave') else (44, 26)
 
 
-@lru_cache(maxsize=48)
-def _base(state, scale, w, h, label='', glyph=True):
-    """The still part of a pill: shadow, pill, outline and, once the size has settled, the state's glyph. Cached,
-    since only the bars and dots move."""
+def _wave(t, period):
+    """0 to 1 and back, smoothly, once per period seconds."""
+    return 0.5 + 0.5 * math.sin(2 * math.pi * t / period)
+
+
+def _glyph(d, skin, state, cx, cy, k, level=0.0, phase=0.0):
+    """One skin's glyph, centred on (cx, cy); k is pixels per unit. The same colours mean the same in every skin."""
+    colour = STATE.get(state, STATE['idle'])
+    still = state not in MOVING
+    loud = min(1.0, level * 1.3)
+    shimmer = 0.35 + 0.65 * _wave(phase, 1.1)
+    fill = _a(colour, round(255 * (shimmer if state in ('working', 'loading') else 1)))
+    if skin == 'dot':
+        r = 3.5 if still else 4.5 * (0.85 + 0.45 * max(loud, 0.35 * _wave(phase, 1.0)))
+        d.ellipse((cx - r * k, cy - r * k, cx + r * k, cy + r * k), fill=fill)
+    elif skin == 'bars':
+        for i, off in enumerate((0.0, -0.2, -0.45)):
+            if still:
+                frac = 0.35
+            elif state == 'listening':
+                frac = 0.22 + 0.78 * _wave(phase + off, 0.9) * (0.35 + 0.65 * loud)
+            else:
+                frac = 0.55
+            hh, bx = 7 * frac, cx + (i - 1) * 9 * k
+            d.rounded_rectangle((bx - 3 * k, cy - hh * k, bx + 3 * k, cy + hh * k), radius=1.5 * k, fill=fill)
+    elif skin == 'ring':
+        r, w = 7.5, max(1, round(2.2 * k))
+        box = (cx - r * k, cy - r * k, cx + r * k, cy + r * k)
+        d.ellipse(box, outline=_a(colour, 64), width=w)
+        turn = 0 if still else (phase / 1.1) * 360
+        d.arc(box, start=turn - 90, end=turn, fill=_a(colour, 255), width=w)
+    elif skin == 'wave':
+        amp = 0 if still else (1.5 + 4.5 * loud if state == 'listening' else 1.5)
+        flow = 0 if still else phase * 20                       # the dashes move to the right
+        half, dash, gap = (11 if still else 22), 5, 3
+        x = -half - (flow % (dash + gap))
+        while x < half:
+            a, b = max(x, -half), min(x + dash, half)
+            if b > a:
+                pts = [(cx + t * k, cy + amp * math.sin((t + flow) / 5.5) * k) for t in (a, (a + b) / 2, b)]
+                d.line(pts, fill=fill, width=max(1, round(2 * k)), joint='curve')
+            x += dash + gap
+    elif skin == 'orb':
+        r = 6.0 if still else 6.0 * (0.9 + 0.25 * max(loud, 0.5 * _wave(phase, 1.4)))
+        for i in range(4, 0, -1) if not still else ():          # the glow, while it works
+            g = r + i * 1.4
+            d.ellipse((cx - g * k, cy - g * k, cx + g * k, cy + g * k), fill=_a(colour, 18))
+        steps = 8
+        for i in range(steps):                                  # light from the top left, as in the demo
+            t = i / (steps - 1)
+            rr = r * (1 - 0.62 * t)
+            ox, oy = -0.3 * r * t, -0.4 * r * t
+            mix = tuple(round(c + (255 - c) * 0.75 * t) for c in colour)
+            d.ellipse((cx + (ox - rr) * k, cy + (oy - rr) * k, cx + (ox + rr) * k, cy + (oy + rr) * k), fill=_a(mix, 255))
+    elif skin == 'mic':
+        z = 1.0 if still else 1 + 0.18 * max(loud, 0.5 * _wave(phase, 1.2)) if state == 'listening' else 1.0
+        u = k * z
+        d.rounded_rectangle((cx - 2.6 * u, cy - 7 * u, cx + 2.6 * u, cy + 2 * u), radius=2.6 * u, fill=fill)
+        w = max(1, round(1.6 * u))
+        d.arc((cx - 5 * u, cy - 4.5 * u, cx + 5 * u, cy + 4.5 * u), start=10, end=170, fill=fill, width=w)
+        d.line([(cx, cy + 4.5 * u), (cx, cy + 7 * u)], fill=fill, width=w)
+        d.line([(cx - 3 * u, cy + 7 * u), (cx + 3 * u, cy + 7 * u)], fill=fill, width=w)
+    elif skin == 'pixel':
+        for i in range(9):
+            row, col = divmod(i, 3)
+            if still:
+                on = i == 4
+            else:
+                off = (0.3 if i % 2 else 0) + (0.6 if i % 3 == 0 else 0)
+                on = int((phase + off) / 0.6) % 2 == 0 or (state == 'listening' and i < round(loud * 9))
+            x, y = cx + (col - 1) * 7 * k, cy + (row - 1) * 7 * k
+            d.rectangle((x - 2.5 * k, y - 2.5 * k, x + 2.5 * k, y + 2.5 * k), fill=_a(colour, 255 if on else 90))
+
+
+@lru_cache(maxsize=64)
+def _base(state, scale, w, h, label='', glyph=True, skin='capsule'):
+    """The still part of a pill: shadow, pill, outline and, once the size has settled, the glyph of a state that
+    doesn't move. Cached, since only the moving glyphs are drawn each frame."""
     k, pad = scale * SS, 6                                      # pad: room for the soft shadow
     colour = STATE.get(state, STATE['idle'])
     W, H = round((w + 2 * pad) * k), round((h + 2 * pad) * k)
@@ -56,13 +136,17 @@ def _base(state, scale, w, h, label='', glyph=True):
     d.rounded_rectangle((x0, y0, x1, y1), radius=h * k / 2, fill=_a(PILL, 235),
                         outline=_a(colour, 255) if state != 'idle' else PILL_LINE, width=max(1, round(1.2 * k)))
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-    if glyph and state in ('idle', 'paused'):
+    if glyph and state == 'done':
+        _check(d, x0 + 19 * k if label else cx, cy, k, _a(colour, 255), round(2.4 * k))
+    elif glyph and state in ('idle', 'paused') and skin == 'capsule':
         for i in range(5):                          # five short bars at rest
             bx = cx + (i - 2) * 6 * k
             d.rounded_rectangle((bx - 1.2 * k, cy - 1.6 * k, bx + 1.2 * k, cy + 1.6 * k), radius=1.2 * k,
                                 fill=_a(colour, 255))
-    elif glyph and state == 'done':
-        _check(d, x0 + 19 * k if label else cx, cy, k, _a(colour, 255), round(2.4 * k))
+    elif glyph and state in ('idle', 'paused'):
+        layer = Image.new('RGBA', img.size, (0, 0, 0, 0))     # faint parts must blend into the pill, not replace it
+        _glyph(ImageDraw.Draw(layer), skin, state, cx, cy, k * 0.8)
+        img.alpha_composite(layer)
     img = img.resize((round(W / SS), round(H / SS)), Image.LANCZOS)
     if glyph and label:                             # "Copied", "Inserted": text is crisper drawn at full size
         f = font(round(12 * scale), True)
@@ -71,14 +155,15 @@ def _base(state, scale, w, h, label='', glyph=True):
     return img
 
 
-def capsule(state, scale=1.0, level=0.0, phase=0.0, size=None, label=''):
-    """The Capsule skin in one state, as an RGBA image. phase (seconds) drives the animation; size, while the pill
-    grows or shrinks between states, is its current (w, h) at scale 1."""
-    (tw, th) = size_of(state, label)
+def capsule(state, scale=1.0, level=0.0, phase=0.0, size=None, label='', skin='capsule'):
+    """The indicator in one state and skin, as an RGBA image. phase (seconds) drives the animation; size, while the
+    pill grows or shrinks between states, is its current (w, h) at scale 1."""
+    skin = skin if skin in SKINS else 'capsule'
+    (tw, th) = size_of(state, label, skin)
     w, h = size or (tw, th)
     settled = abs(w - tw) < 1 and abs(h - th) < 1
-    img = _base(state, scale, round(w), round(h), label if settled else '', settled)
-    if not settled or state not in ('listening', 'working', 'loading'):
+    img = _base(state, scale, round(w), round(h), label if settled else '', settled, skin)
+    if not settled or state not in MOVING:
         return img
     img = img.copy()
     colour, k = STATE[state], scale * 2                          # moving parts at 2x: about 0.3 ms a frame
@@ -86,7 +171,9 @@ def capsule(state, scale=1.0, level=0.0, phase=0.0, size=None, label=''):
     layer = Image.new('RGBA', (lw, lh), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     cx, cy = lw / 2, lh / 2
-    if state == 'listening':
+    if skin != 'capsule':
+        _glyph(d, skin, state, cx, cy, k, level, phase)
+    elif state == 'listening':
         for i, b in enumerate((4, 8, 14, 10, 18, 12, 7, 11, 5)):     # bars that follow your voice
             wobble = 0.6 + 0.4 * math.sin(phase * 7 + i * 1.3)
             hh = min(lh / 2, max(1.3 * k, b * (0.2 + 0.8 * min(1.0, level * 1.3)) * wobble * k / 2))
@@ -100,6 +187,11 @@ def capsule(state, scale=1.0, level=0.0, phase=0.0, size=None, label=''):
     layer = layer.resize((round(lw / 2), round(lh / 2)), Image.LANCZOS)
     img.alpha_composite(layer, ((img.width - layer.width) // 2, (img.height - layer.height) // 2 - round(scale)))
     return img
+
+
+def preview(skin, state='listening', scale=1.0):
+    """A still picture of a skin, for the settings window."""
+    return capsule(state, scale, 0.6, 0.3, skin=skin)
 
 
 def words_box(text, scale=1.0, max_px=380):
