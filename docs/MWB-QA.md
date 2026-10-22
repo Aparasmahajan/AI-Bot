@@ -4,6 +4,8 @@ Your questions from our conversation, quoted exactly as you wrote them, each fol
 
 Prepared 12 October 2026.
 
+*Update (16 Oct):* paths that showed the Windows user name now say `%USERPROFILE%`, because the repository is public. Nothing else in the questions or answers changed.
+
 - **Design document (Rev F):** https://claude.ai/artifact/DmETZMSZBmr5J6gME4uvTL (private until you share it from the page's Share menu)
 - **Offline copy of the design document:** `docs/MWB-POC-Design.html`
 - **Interactive demo of the UI:** https://claude.ai/artifact/JkKapQwt42FiU1TMUcjFCZ, offline copy `docs/MWB-Demo.html`
@@ -49,7 +51,9 @@ Prepared 12 October 2026.
 35. [Is everything done? Phase 4, the journal, is built](#35-is-everything-done-phase-4-the-journal-is-built)
 36. [Phase 5 built: recovery, settings, skins, effort, portable](#36-phase-5-built-recovery-settings-skins-effort-portable)
 37. [All things done?](#37-all-things-done)
-38. [Glossary](#38-glossary)
+38. [Committed; what next? And Claude never commits](#38-committed-what-next-and-claude-never-commits)
+39. [How to run MWB](#39-how-to-run-mwb)
+40. [Glossary](#40-glossary)
 
 ---
 
@@ -58,7 +62,7 @@ Prepared 12 October 2026.
 **Your question**
 
 > see and understand my current laptop configuration i want you to create an ai bot that takes summary of my day to day task helps me in email writting and understanding and transcribing my task uses least ram and memory
-> has best transcribing model like i used in "C:\Users\parmahaj\Documents\New folder\AI-App" also helps me in writing and understanding optimised code
+> has best transcribing model like i used in "%USERPROFILE%\Documents\New folder\AI-App" also helps me in writing and understanding optimised code
 >
 > see i am new to this ai stuff as of now i just want a poc having all the required data and ways to achieve a best bot like whisper flow see it must have understanding of my meeting tracks it
 > separates timepass meating from work related ones
@@ -408,8 +412,8 @@ Real 4-bit files come out a little above the formula, because some parts are kep
 
 | Item | Where | Size | How it got there |
 |---|---|---|---|
-| Parakeet TDT 0.6B v2, int8 | `C:\Users\parmahaj\.cache\huggingface\hub\models--istupakov--parakeet-tdt-0.6b-v2-onnx` | 631 MB | Downloaded by AI-App on 1 Oct 2026 |
-| Whisper base.en | `C:\Users\parmahaj\Documents\New folder\AI-App\addon\ggml-base.en.bin` | 148 MB | AI-App's setup script |
+| Parakeet TDT 0.6B v2, int8 | `%USERPROFILE%\.cache\huggingface\hub\models--istupakov--parakeet-tdt-0.6b-v2-onnx` | 631 MB | Downloaded by AI-App on 1 Oct 2026 |
+| Whisper base.en | `%USERPROFILE%\Documents\New folder\AI-App\addon\ggml-base.en.bin` | 148 MB | AI-App's setup script |
 | Speech runtimes | AI-App's Python environment (onnxruntime 1.30, onnx-asr 0.12) and whisper.cpp v1.9.2 in `AI-App\addon` | — | AI-App's setup script |
 | A language model | ~~None. No Ollama, no llama.cpp, no GGUF files.~~ **Wrong, see the correction below.** | — | — |
 | OLMoE folder | In the same Hugging Face cache | 1 KB, empty | Created on 18 Sep; no model files inside |
@@ -418,11 +422,11 @@ Check it yourself in PowerShell:
 
 ```powershell
 Get-ChildItem "$env:USERPROFILE\.cache\huggingface\hub"                        # Parakeet's folder is here
-Get-ChildItem "C:\Users\parmahaj\Documents\New folder\AI-App\addon\*.bin"       # whisper base.en
+Get-ChildItem "$env:USERPROFILE\Documents\New folder\AI-App\addon\*.bin"       # whisper base.en
 Get-Command ollama, llama-server -ErrorAction SilentlyContinue                   # prints nothing: no LLM runtime installed
 ```
 
-*Correction (12 Oct):* this table was wrong. llama.cpp (build 11015) is installed in `C:\Users\parmahaj\Tools\llamacpp`, and LM Studio 0.4.25 is installed too. Three Qwen2.5 models (Coder 3B, Coder 7B and VL 3B, 8.75 GB in total) are in `Tools\llamacpp\models`. The `Get-Command` check printed nothing only because llama.cpp isn't on the PATH. Whisper small is now in `%LOCALAPPDATA%\MWB\models`. See question 11. Since then, Qwen3.5 has replaced the Qwen2.5 models (question 13).
+*Correction (12 Oct):* this table was wrong. llama.cpp (build 11015) is installed in `%USERPROFILE%\Tools\llamacpp`, and LM Studio 0.4.25 is installed too. Three Qwen2.5 models (Coder 3B, Coder 7B and VL 3B, 8.75 GB in total) are in `Tools\llamacpp\models`. The `Get-Command` check printed nothing only because llama.cpp isn't on the PATH. Whisper small is now in `%LOCALAPPDATA%\MWB\models`. See question 11. Since then, Qwen3.5 has replaced the Qwen2.5 models (question 13).
 
 ### 7.8 The models MWB will use
 
@@ -887,9 +891,9 @@ This time I searched every file in your user folder for model files and llama.cp
 
 | Item | Where | Size |
 |---|---|---|
-| llama.cpp, build 11015 (September 2026), CPU and Vulkan versions | `C:\Users\parmahaj\Tools\llamacpp\cpu` and `...\vulkan` | — |
-| LM Studio 0.4.25, with its own copies of llama.cpp | `C:\Users\parmahaj\.lmstudio` | — |
-| Qwen2.5-Coder-7B-Instruct, 4-bit | `C:\Users\parmahaj\Tools\llamacpp\models` | 4.36 GB |
+| llama.cpp, build 11015 (September 2026), CPU and Vulkan versions | `%USERPROFILE%\Tools\llamacpp\cpu` and `...\vulkan` | — |
+| LM Studio 0.4.25, with its own copies of llama.cpp | `%USERPROFILE%\.lmstudio` | — |
+| Qwen2.5-Coder-7B-Instruct, 4-bit | `%USERPROFILE%\Tools\llamacpp\models` | 4.36 GB |
 | Qwen2.5-Coder-3B-Instruct, 4-bit | same folder | 1.80 GB |
 | Qwen2.5-VL-3B-Instruct, 4-bit, plus its image part | same folder | 1.80 + 0.79 GB |
 | whisper small, multilingual | `Documents\New folder\dmp\incomp\AI App\addon\ggml-small.bin` | 487 MB |
@@ -1119,7 +1123,7 @@ So on this laptop MWB keeps whisper small for everyday Hindi and Hinglish, and u
 | Qwen3.5-4B-Q4_K_M.gguf | 2.71 GB | OK |
 | mmproj-Qwen3.5-4B-BF16.gguf | 0.68 GB | OK |
 
-They're in `C:\Users\parmahaj\Tools\llamacpp\models`, and LM Studio lists them too.
+They're in `%USERPROFILE%\Tools\llamacpp\models`, and LM Studio lists them too.
 
 **Qwen2.5 is deleted for good:**
 
@@ -2120,7 +2124,87 @@ Everything that can be built is built: all five phases of the plan, each tested 
 
 ---
 
-## 38. Glossary
+## 38. Committed; what next? And Claude never commits
+
+**Your questions**
+
+> i have committed
+>
+> now proceed further
+>
+> you never will commit just ask me to do
+
+**My answer**
+
+**Your commit** (`40705c8`, "added changed ui") holds all the work since 14 October, on your local `dev` branch. Nothing was pushed, which is right while the GitHub repository is public.
+
+**I'll never commit.** When something is ready I'll tell you and give you the git commands to run yourself. I've saved that as a standing rule for future sessions too.
+
+**Proceeding further.** All five phases are built, so I did the two things left that don't need you:
+
+| Step | Result |
+|---|---|
+| Personal details before any push | Your Windows user name was in 14 paths in three docs; they now say `%USERPROFILE%` (or `$env:USERPROFILE` in PowerShell commands, so they still run). Your Git identity was in the design document; it now says "your own identity", and the document is rebuilt. Your earlier commits still contain them, so making the repository private before pushing is still the real fix |
+| The local half of P0-4 | Can't run yet: it needs about 3.5 GB free and 1.8 GB is free now. Close windows (or switch Wispr Flow off) and tell me, or run it yourself: `.venv\Scripts\python.exe -I docs\bench\p0_4_sync_check.py --routes local` |
+
+**What's next is yours:** start MWB with `Start MWB.cmd` and use it; tell me where dictation goes wrong. The full list is in TODO.md under "Now".
+
+**To commit these small fixes yourself**, in the MWB folder:
+
+```
+git add docs/MWB-POC-Design.html docs/MWB-QA.md docs/bench/RESULTS-2026-10-11.md docs/src/parts/02-laptop.html
+git commit -m "Use %USERPROFILE% instead of the user name in docs"
+```
+
+---
+
+## 39. How to run MWB
+
+**Your question**
+
+> how to run this MWB
+
+**My answer**
+
+Everything MWB needs is already on this laptop. I checked on 22 Oct: MWB's Python environment (`.venv`), AI-App's speech engine, whisper small and your Groq key in Credential Manager are all in place. So running it is one double-click.
+
+**Start it**
+
+1. Open the MWB folder in File Explorer.
+2. Double-click **`Start MWB.cmd`**. No black window stays open; MWB goes to the tray, next to the clock (click the small **^** arrow if you can't see its icon).
+3. **The first time only**, a setup screen opens and asks how hard MWB may work on this laptop (Battery saver E1 to High E3). Pick one and save. You can change it later from the tray, **Performance…**.
+
+Starting it a second time does nothing, so double-clicking twice is harmless. If it crashes, its watchdog starts it again.
+
+**Use it**
+
+| Do this | What happens |
+|---|---|
+| Click in any text box, double-tap **Caps Lock**, talk, then pause 2 s | Your words are typed where the cursor is |
+| Double-tap **Alt** | Shows or hides the small indicator above the taskbar |
+| **Esc** while it listens | Cancels |
+| **Ctrl+Alt+J** | Opens the Today page in your browser |
+| **Ctrl+Alt+P** | Pauses or resumes MWB |
+| **Ctrl+Alt+Shift+W**, or the tray menu | Quits MWB |
+
+The full list of keys is in README.md, "Using MWB".
+
+**What to expect the first time**
+
+- The first dictation waits while the speech engine loads: 10–40 s when memory is tight. After that, text arrives about a second after you stop.
+- The speech engine needs about 1 GB of free memory and refuses to load below that. 1.9 GB was free when I checked; if MWB says there isn't enough memory, close a few windows or switch Wispr Flow off.
+- Meetings, answers and the journal work without anything more; the Groq key is already saved.
+
+**If something goes wrong**
+
+- "MWB's environment is missing": the `.venv` folder was moved or deleted. Tell me and I'll rebuild it from `requirements.txt`.
+- Nothing seems to happen: look at the newest file in `%LOCALAPPDATA%\MWB\logs` (it never holds what you said), or tell me what you did and I'll read it.
+
+**For the curious:** the shortcut runs `.venv\Scripts\pythonw.exe -m mwb.watchdog`, which starts the app (`python -m mwb`) and restarts it after a crash. You don't need to type this; the double-click does it.
+
+---
+
+## 40. Glossary
 
 | Term | Meaning |
 |---|---|
