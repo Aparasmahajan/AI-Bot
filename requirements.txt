@@ -1,0 +1,18 @@
+# MWB's Python libraries, installed only into MWB\.venv (design document §16.5).
+# Exact versions, with the SHA-256 that PyPI publishes for each file, so pip refuses anything else.
+# Install: .venv\Scripts\python.exe -m pip install --require-hashes --only-binary :all: -r requirements.txt
+
+# Phase 0, approved 13 Oct 2026
+# PyAudioWPatch: mic and call audio (P0-1, P0-7). Released 6 Oct 2026 by the project's own GitHub workflow (PyPI provenance).
+PyAudioWPatch==0.2.12.9 \
+    --hash=sha256:dc3ae964530ffe70119a1e2f5b76c661b676aa1cf1b9755d8ecafe081ee85f53
+# comtypes: Outlook over COM (P0-3) and browser tab titles (P0-5). Pure Python. Released 21 Sep 2026.
+comtypes==1.4.17 \
+    --hash=sha256:4e0a221dde2c589b82977bed802efd71cd5eb67a380347b732e02735e597f586
+
+# Phase 1, approved 14 Oct 2026
+# Pillow: paints the on-screen indicator and the tray icons. Released 1 Jul 2026.
+pillow==12.3.0     --hash=sha256:fdafc9cce40277e0f7a0feabce0ee50dd2fa1800f3b38015e51296b5e814048d
+# pystray: the tray icon and its menu. Released 17 Sep 2023; needs Pillow and six.
+pystray==0.19.5     --hash=sha256:a0c2229d02cf87207297c22d86ffc57c86c227517b038c0d3c59df79295ac617
+six==1.17.0     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274

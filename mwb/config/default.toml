@@ -1,0 +1,104 @@
+# MWB's built-in settings (design §16.3). Don't edit this file: put only what you want to change in
+# %APPDATA%\MWB\config.toml, under the same [section] names. Paths may use %USERPROFILE% and %LOCALAPPDATA%.
+# Phase 1 reads the sections below; the rest of §16.3 arrives with the phases that use it.
+
+[hotkeys]
+# Push-to-talk: hold, speak, let go. The first shortcut that Windows lets MWB register wins. Ctrl+Alt+Space is
+# taken on this laptop (probably the Claude app's quick entry), so the fallback is used (P0-2, 14 Oct 2026).
+dictate = ["ctrl+alt+space", "ctrl+shift+alt+space"]
+pause = ["ctrl+alt+p"]
+meeting = ["ctrl+alt+m"]            # start or stop recording a call by hand
+today = ["ctrl+alt+j"]              # the Today page: meetings and transcripts
+rewrite = ["ctrl+alt+r"]            # hold and say how to change the selected text
+email = ["ctrl+alt+e"]              # press: explain the selected email; hold and speak: draft a reply
+code = ["ctrl+alt+k"]               # press: explain the selected code; hold and speak: write code
+note = ["ctrl+alt+n"]               # hold and speak: a voice note for today's journal
+journal = ["ctrl+alt+shift+j"]      # write today's journal now
+quit = ["ctrl+alt+shift+w"]
+
+[triggers]
+talk = "double-tap caps lock"       # or "off"
+finish_pause_s = 2.0                # in hands-free mode, this long a pause after speaking finishes
+give_up_s = 10.0                    # hands-free and nothing said for this long: cancel quietly
+max_s = 300                         # a dictation never runs longer than this
+
+[indicator]
+show = true
+toggle = "double-tap alt"           # or "none"
+skin = "capsule"                    # capsule | dot | bars | ring | wave | orb | mic | pixel
+visible = "always"                  # or "while-active"
+size = "small"                      # small | medium | large
+opacity = 0.85
+live_words = true
+hide_in_fullscreen = true
+
+[dictation]
+threads = 4                         # speech threads for dictation (§11.4)
+idle_unload_min = 15                # the speech worker exits after this many idle minutes
+load_on_start = true                # start the speech worker with MWB when memory allows, so the first dictation is quick
+pause_ms = 500                      # a pause this long cuts a piece of audio for transcription while you talk
+piece_max_s = 10
+restore_clipboard_ms = 400          # P0-2 pasted reliably with 400 ms
+type_instead = []                   # apps that block paste get typed text instead, e.g. ["putty.exe"]
+trailing_space = true               # a space after the final punctuation, so the next dictation joins on
+
+[speech]
+# The speech worker runs in AI-App's proven Parakeet environment (§16.4). MWB_ASR_PYTHON overrides this.
+python = '%USERPROFILE%\Documents\New folder\AI-App\addon\parakeet\.venv\Scripts\pythonw.exe'
+model_gb = 1.0                      # Parakeet's measured private memory, warm (§6)
+margin_gb = 1.0                     # the memory guard wants the model plus this much free (§11.2)
+
+[meetings]
+detect = true                       # watch which apps use the mic, every 5 s (§9.3)
+ask_before_recording = "first-week" # first-week | always | never. Personal apps (WhatsApp, ...) always ask
+keep_audio = false                  # pieces are deleted the moment they are transcribed
+language = "auto"                   # whisper small hears English, Hindi and Hinglish; or "en", "hi"
+whisper_cli = '%USERPROFILE%\Documents\New folder\AI-App\addon\whisper-blas-bin-x64\Release\whisper-cli.exe'
+whisper_model = '%LOCALAPPDATA%\MWB\models\ggml-small.bin'
+model_gb = 0.8                      # whisper small's working set, measured 14 Oct 2026
+live = true                         # transcribe during the call (on mains power with a calm CPU)
+live_threads = 2                    # during a call, on mains power, at low priority (§11.4)
+after_threads = 4                   # after the call, to have the transcript within about 2 minutes
+piece_min_s = 22                    # whisper works on 30 s windows: a piece of 22-28 s costs no more than a 4 s one
+piece_flush_s = 20                  # ... so a piece keeps going across turns, and closes early only after this much silence
+piece_max_s = 28
+outlook = "start"                   # start | if-running | off: the meeting's subject from the classic Outlook calendar
+
+[llm]
+# Language work goes to the API first; a local model kept in sync takes over when it can't (§12.7).
+route = "api"                       # api | local
+provider = "groq"
+model = "openai/gpt-oss-120b"       # notes, email, code, answers (P0-4: 42 of 42 checks)
+quick_model = "openai/gpt-oss-20b"  # labels and short jobs, which it always got right in P0-4
+reasoning_effort = "low"            # low was as accurate as medium and faster (P0-4)
+api_timeout_s = 20                  # no word from the API for this long: use the local model
+when_api_fails = "local"            # local | queue
+sync_check = "weekly"               # weekly | off: the ten saved prompts through both routes, on mains power (§12.7)
+local_only = ["email-style"]        # these skills never send text out
+llamacpp = '%USERPROFILE%\Tools\llamacpp'
+local_model = "Qwen3.5-2B-Q4_K_M.gguf"       # every day: 1.25 GB
+local_model_big = "Qwen3.5-4B-Q4_K_M.gguf"   # code and the journal: 2.42 GB
+local_big_for = ["code", "journal"]
+local_threads = 4
+local_idle_min = 5                  # the local model exits 5 minutes after its last job on Lean (§11.2)
+
+[journal]
+# The end-of-day journal (§9.6): commits, meetings, time per project, notes and tomorrow, as a Markdown file you own.
+time = "18:30"                      # written then, or when you press Ctrl+Alt+Shift+J
+folder = ""                         # empty: Documents\MWB\journal
+repo_roots = ['%USERPROFILE%\Documents\New folder']    # git repositories under these folders
+git_author = "auto"                 # your commits: git config --global user.email
+activity_sample_s = 10              # the app in front, every 10 s; the window title only picks the project
+denylist = ["*bank*", "*whatsapp*", "*netbanking*", "*password*", "*private*", "*incognito*", "*inprivate*"]
+email = "off"                       # off | classic-outlook: sent-mail subjects and people, never bodies. Off until
+                                    # you decide, since your work mail is in Outlook on the web (TODO.md)
+manager_email = ""                  # put in the To line of "Open as Outlook draft"; MWB never sends
+
+[assist]
+wake_word = "MWB"                   # "MWB, what's my next meeting?" asks instead of writing
+talk_mode = "decide"                # decide | always-write | always-answer
+# Apps whose typing area Windows doesn't report as a text box: there a double tap always writes
+always_write_in = ["WindowsTerminal.exe", "conhost.exe", "cmd.exe", "powershell.exe", "pwsh.exe", "putty.exe",
+                   "mintty.exe", "Code.exe", "idea64.exe", "notepad++.exe"]
+my_name = ""                        # how action items name you; empty: "You"
+style = "Greeting \"Hi <first name>,\", short paragraphs, sign-off \"Thanks,\""   # until the style card is learned

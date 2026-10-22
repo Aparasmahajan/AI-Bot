@@ -1,0 +1,16 @@
+# Python environments and caches
+.venv/
+__pycache__/
+
+# Build output of the design document
+docs/src/out/
+
+# Recordings and test audio: your voice stays on this laptop
+*.wav
+*.opus
+
+# Partial downloads
+*.part
+
+# The portable build (tools/build_portable.py)
+dist/

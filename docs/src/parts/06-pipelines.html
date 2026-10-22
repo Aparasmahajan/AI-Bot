@@ -1,0 +1,232 @@
+
+<section id="s9" class="sec">
+<h2><span class="n">9</span>Pipelines</h2>
+
+<h3><span class="n">9.1</span>Dictation</h3>
+<p>The goal is Wispr Flow's feel without its memory cost: double-tap Caps Lock, talk, and the text is already there when you stop. The trick is to transcribe while you are still talking, so that when you finish only the last couple of seconds are left.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:dict}}</div>
+  <figcaption><b>Figure 9.1</b>A 6-second dictation, drawn to scale and shown with the push-to-talk keys. A double tap of Caps Lock works the same way, with a second double tap or a 2-second pause in place of the release. Segment 1 is transcribed while you are still speaking; at the end only segment 2 remains. ASR times are from §6, 4 threads. In the built app the whole finish, clean-up and paste included, took 0.98 s (median of 20 phrases, on battery with the CPU busy, §6.5).</figcaption>
+</figure>
+<ol>
+  <li><b>Start.</b> Double-tap Caps Lock to talk hands-free, or hold Ctrl+Alt+Space for push-to-talk. On this laptop another app owns Ctrl+Alt+Space, so MWB registers its fallback, Ctrl+Shift+Alt+Space (P0-2). The mic opens at once, at its own rate, and a 0.4 s pre-roll keeps the first sound, so the first word is never lost. The indicator wakes up (§13.3). If the speech worker is not running, the core starts it now; it also loads when MWB starts, if 2 GB is free.</li>
+  <li><b>While you talk.</b> Voice-activity detection cuts the audio at pauses of 500 ms or more, into pieces of at most 10 s, and sends each piece to the worker as soon as it closes. With live words on, the indicator shows the last few words.</li>
+  <li><b>Finish.</b> Double-tap Caps Lock again, stop talking for 2 s, or let go of the push-to-talk keys; Esc cancels. A hands-free dictation with nothing said for 10 s cancels itself, and none runs longer than 5 minutes. The last piece goes to the worker at once. MWB waits until Ctrl, Alt, Shift, Win, Caps Lock and Space are all up, so its paste never arrives as Ctrl+Alt+V or Ctrl+Shift+V, and Caps Lock ends in the state it started in.</li>
+  <li><b>Write or answer.</b> If the cursor is not in a text box, or you began with the wake word ("MWB, what's my next meeting?"), your words become a question for answer mode (§9.7). The text-box check uses UI Automation. Terminals, VS Code and a few other editors don't report a text box to Windows, so there a double tap always writes (<code>always_write_in</code> in the settings). Rewriting the selection has its own key (§9.2). Otherwise MWB writes.</li>
+  <li><b>Clean-up rules</b>, under 5 ms: drop fillers, collapse stutters, turn spoken commands into punctuation, apply your dictionary. Parakeet already outputs punctuation and capitals.</li>
+  <li><b>Optional polish</b> by a language model, chosen per app. Through the API it adds under a second; on the local fallback, 1 to 3 s. It is off by default on the Lean profile, because it sends what you dictated to the API; hold Shift as you finish to ask for it. <i>Not built yet:</i> it comes with the per-app style (DIC-4) in Phase 5.</li>
+  <li><b>Insert.</b> Save the clipboard, put the text on it, send Ctrl+V, and restore the clipboard 400 ms later (P0-2 pasted reliably with 400 ms). MWB's text is marked to stay out of the clipboard history (Win+V), and the clipboard is put back only if nothing else changed it meanwhile. When the clipboard holds something other than text, such as an image or copied files, or the app is on the <code>type_instead</code> list, the text is typed with SendInput instead, so nothing you copied is lost.</li>
+  <li><b>Log</b> the text, the program it went into (never the window title) and the latency to the history table, for search. The tray's "Copy last dictation" gets the last one back. MWB's log files record only lengths and timings, never the words.</li>
+</ol>
+<div class="tbl dense"><table>
+<thead><tr><th>You say</th><th>MWB types</th><th>Rule</th></tr></thead>
+<tbody>
+<tr><td>"um so I think we should uh ship it today"</td><td>So I think we should ship it today.</td><td>fillers</td></tr>
+<tr><td>"thanks new line regards"</td><td>Thanks<br>Regards</td><td>spoken commands</td></tr>
+<tr><td>"bullet point check the consumer logs"</td><td>- Check the consumer logs</td><td>spoken commands</td></tr>
+<tr><td>"ask preya about the m t m s release"</td><td>Ask Priya about the MTMS release.</td><td>personal dictionary</td></tr>
+<tr><td>"send it Friday scratch that Thursday"</td><td>Send it Thursday.</td><td>self-correction</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">9.2</span>Voice commands on selected text</h3>
+<p>Select text anywhere, hold <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd>, and say what you want: "shorter", "more formal", "turn this into bullet points", "translate to Hindi". MWB copies the selection, restoring your clipboard afterwards, transcribes the instruction, asks the language model to rewrite, and shows the result in a panel that rises out of the indicator, with Copy and Replace. The panel never takes the keyboard focus, so the selection is still there for Replace. A quick press without speaking shows a short hint.</p>
+<p>Through the API, rewriting a paragraph takes 1 to 2 s. On the local fallback it takes roughly 5 to 15 s on this laptop, so the result streams into the panel as it is written; the second memory stick makes that about twice as fast.</p>
+
+<h3><span class="n">9.3</span>Meetings</h3>
+<figure class="fig">
+  <div class="fig-frame">{{fig:mtg}}</div>
+  <figcaption><b>Figure 9.2</b>Meeting pipeline. Transcription runs during the call at low priority, so the transcript is ready about a minute after you hang up. Notes and the label follow as a batch job. As built (Rev G): whisper small in pieces of 22–28 s, live only on mains power with a calm CPU, otherwise right after the call.</figcaption>
+</figure>
+<p><b>Any video-call app, desktop or browser.</b> Detection does not depend on one vendor. Every 5 seconds the core asks Windows which apps are using the microphone right now. Windows records when each app last started and stopped using the mic, both for packaged apps such as new Teams or WhatsApp and for desktop programs such as <code>Zoom.exe</code> or <code>slack.exe</code>. A stop time of 0 means the app is using the mic at this moment. Reading these keys takes microseconds and needs no admin rights. On this laptop, keys already exist for new Teams, Edge and Wispr Flow.</p>
+<div class="code-h">sensors/meeting_detector.py (simplified from the built code)</div>
+<pre><code>import winreg
+
+MIC = r"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
+
+def mic_holders() -&gt; list[str]:
+    """Every app using the microphone right now, packaged or desktop."""
+    found = []
+    for path, packaged in ((MIC, True), (MIC + r"\NonPackaged", False)):
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as root:
+            for i in range(winreg.QueryInfoKey(root)[0]):
+                name = winreg.EnumKey(root, i)
+                if name == "NonPackaged":
+                    continue
+                with winreg.OpenKey(root, name) as k:
+                    try:
+                        start = winreg.QueryValueEx(k, "LastUsedTimeStart")[0]
+                        stop = winreg.QueryValueEx(k, "LastUsedTimeStop")[0]
+                    except FileNotFoundError:
+                        continue
+                if start and stop == 0:                  <span class="c"># 0 = still using the mic</span>
+                    <span class="c"># desktop apps are keyed by exe path with "#" for "\"; keep the exe name</span>
+                    found.append(name if packaged else name.split("#")[-1])
+    return found   <span class="c"># e.g. ["MSTeams_8wekyb3d8bbwe"], ["Zoom.exe"], ["brave.exe"]</span></code></pre>
+<p>Each holder is matched against <code>config/vc_apps.toml</code>. MWB's own process is never a call, and nor are dictation apps and recorders such as Wispr Flow. When the holder is a browser, MWB reads the titles of that browser's windows, only at that moment, and looks for a known meeting site. A window title shows only the tab in front, so reading every tab through UI Automation is still to do. The camera key is recorded with the meeting, and the classic Outlook calendar item running within 10 minutes either side gives the meeting its subject.</p>
+<div class="tbl dense"><table>
+<thead><tr><th>App</th><th>How MWB recognises it</th><th>Default policy</th></tr></thead>
+<tbody>
+<tr><th scope="row">Microsoft Teams</th><td>Packaged app <code>MSTeams_8wekyb3d8bbwe</code>; in a browser, a tab ending in "| Microsoft Teams"</td><td>record</td></tr>
+<tr><th scope="row">Zoom</th><td><code>Zoom.exe</code>; in a browser, a Zoom meeting tab</td><td>record</td></tr>
+<tr><th scope="row">Google Meet</th><td>A browser tab titled "Meet – …", including the installed Meet web app</td><td>record</td></tr>
+<tr><th scope="row">Webex</th><td>The Webex desktop app; in a browser, a Webex tab</td><td>record</td></tr>
+<tr><th scope="row">Slack huddles</th><td><code>slack.exe</code> holding the mic</td><td>ask</td></tr>
+<tr><th scope="row">GoTo, RingCentral, Zoho Meeting, Jitsi, Whereby</th><td>Their desktop app, or the site's name in a tab title</td><td>ask until you choose</td></tr>
+<tr><th scope="row">WhatsApp, Discord, Telegram, Phone Link</th><td>Packaged app or exe, marked personal</td><td>ask, every time</td></tr>
+<tr><th scope="row">Anything else</th><td>Any unknown app or browser holding the mic for 20 s or more</td><td>ask each time; "Never for this app" is remembered</td></tr>
+</tbody></table></div>
+<div class="code-h">config/vc_apps.toml (excerpt). New apps are added here, without code changes. It is TOML, not the YAML first sketched, because Python reads TOML without an extra library.</div>
+<pre><code>browsers  = ["chrome.exe", "msedge.exe", "brave.exe", "firefox.exe", "opera.exe", "vivaldi.exe"]
+not_calls = ["Wispr Flow.exe", "WisprFlow.exe", "SoundRecorder.exe"]   <span class="c"># MWB's own process is always left out</span>
+
+[[app]]
+id = "teams"
+name = "Teams"
+packaged = ["MSTeams_8wekyb3d8bbwe"]          <span class="c"># confirmed on this laptop (P0-5, 13 Oct 2026)</span>
+exe = ["ms-teams.exe", "Teams.exe"]
+tabs = ["| Microsoft Teams"]
+policy = "record"
+
+[[app]]
+id = "whatsapp"
+name = "WhatsApp"
+packaged = ["5319275A.WhatsAppDesktop_cv1g1gvanyjgm"]
+exe = ["WhatsApp.exe"]
+tabs = ["WhatsApp"]
+policy = "ask"
+personal = true                               <span class="c"># always asks, whatever the policy</span></code></pre>
+<ul>
+  <li><b>Start:</b> a known call app holds the mic for 20 s or more, or an unknown one does and you say yes. If a classic Outlook calendar item is running within 10 minutes either side, its subject becomes the meeting's title; MWB may start Outlook for this (decision 4). The organizer and attendees are left for the journal (Phase 4).</li>
+  <li><b>Asking first:</b> during the first week MWB asks before every recording, and apps marked personal, or with the policy "ask", always ask. A small card appears at the bottom right: "Teams is using the microphone. Record this call?", with Record, Not this one, and Never for Teams. It never takes the keyboard focus, so your typing in the call goes on. No answer within 2 minutes means "Not this one".</li>
+  <li><b>On start:</b> the notification "Recording Sprint review (Zoom). Press Ctrl+Alt+M to stop.", and the tray icon and the indicator get the orange ring. Ctrl+Alt+M also starts a recording by hand.</li>
+  <li><b>Two lanes:</b> You (mic) and Them (system loopback), each with AI-App's VAD and gain levelling; echo is removed when the lanes are merged. Loopback hears every app the same way, so no app needs special support. Windows sends loopback audio only while something plays, so the recorder fills the gaps with silence from the clock and both lanes keep one timeline. Later, Windows' per-process loopback can capture only the call app's audio, whichever app it is.</li>
+  <li><b>During the call:</b> each lane is cut at pauses into pieces of 22–28 s, which are written to <code>%LOCALAPPDATA%\MWB\audio\m&lt;id&gt;</code> as temporary WAV files. whisper small transcribes each piece with one whisper-cli run: 2 threads, below-normal priority. This happens live only on mains power and while the CPU hasn't stayed above 80 % for 30 s. On battery, or with a busy CPU such as video and screen sharing, the pieces wait and are transcribed after the call with 4 threads. Each piece is deleted the moment it is transcribed, and pieces left by a crash are picked up at the next start.</li>
+  <li><b>The end:</b> the mic is released for 60 s, or you press Ctrl+Alt+M. When the last piece is done, the lanes are merged into one timeline marked You and Them, echo is removed, and "Transcript ready: Sprint review · 45 min. Press Ctrl+Alt+J to open it." appears.</li>
+  <li><b>After the call:</b> write notes for each 10-minute chunk, combine them into one summary, pull out decisions and action items with owners, then classify (§10). Owners and deadlines are copied as said ("by Friday"); the date is worked out by code from the meeting's day, because the models got dates wrong in P0-4. With only two lanes MWB can't tell the other speakers apart, so their action items are owned by "Them" until diarization arrives.</li>
+  <li><b>No recording needed:</b> if the platform already transcribed the meeting (Teams, Zoom cloud recordings, Google Meet, Webex), the tray's "Import a transcript…" reads its .vtt, .docx or .txt file instead. It costs no CPU, nothing is recorded at all, and the meeting gets the same notes and label.</li>
+</ul>
+
+<h3><span class="n">9.4</span>Email</h3>
+<div class="cols">
+  <div>
+    <h4>Explain: press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd></h4>
+    <p>Works on selected text in any mail client, including your work mail in Outlook on the web in Edge. When classic Outlook is in front and nothing is selected, it reads the open or selected message directly. The panel shows a short summary, what they want from you, deadlines as real dates (worked out by code), the people involved, and reply ideas.</p>
+  </div>
+  <div>
+    <h4>Draft: hold <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd> and speak</h4>
+    <p>Say the gist: "tell him I'll share the build by Wednesday and I still need Kafka access". MWB writes the reply in your style and shows it in the result panel with Copy, Insert, and, when the email came from classic Outlook, Open as Outlook draft for you to edit. It never calls Send, and a test checks every line of MWB's code for that.</p>
+  </div>
+</div>
+<div class="code-h">collectors/outlook.py (simplified, classic Outlook only)</div>
+<pre><code>from comtypes.client import CreateObject      <span class="c"># comtypes: 0.3 MB, pure Python</span>
+
+ol = CreateObject("Outlook.Application", dynamic=True)
+ns = ol.GetNamespace("MAPI")
+insp = ol.ActiveInspector()
+item = insp.CurrentItem if insp else ol.ActiveExplorer().Selection.Item(1)
+body = item.Body[:8000]               <span class="c"># untrusted text: summarised, never executed</span>
+reply = item.Reply()
+reply.Body = draft + "\n\n" + reply.Body
+reply.Display()                       <span class="c"># opens a draft window; there is no Send() anywhere in MWB</span>
+sent = ns.GetDefaultFolder(5).Items   <span class="c"># 5 = Sent Items: journal list and your style card</span></code></pre>
+<p><b>Your style card.</b> Once, at night on the local model, MWB reads up to 30 of your sent emails and writes a short card: greeting, sign-off, typical length, tone and phrases you use. Those emails are not uploaded. Drafts then use the card plus the thread, through the API like the rest of the email skill. <i>Not built yet:</i> until it is, drafts use a short style line from the settings (<code>[assist] style</code>). Your sent work mail is only in Outlook on the web, so the style card waits for your choice on how MWB may read it (decision 4).</p>
+<p class="small">COM works with classic Outlook, which is installed with one profile and holds your meeting calendar. Your work account is on Microsoft 365 and only in Outlook on the web, and new Outlook has no COM, so there MWB works from selected text. A Microsoft Graph connection is a later option; it needs an app registration that IT approves.</p>
+
+<h3><span class="n">9.5</span>Code</h3>
+<p>Select code anywhere and press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd>. The panel shows what the code does, problems (bugs, edge cases, complexity), an optimised version as a diff, and tests if you ask. Its buttons are Copy, Replace selection, and Open diff in VS Code (<code>code --diff</code>). MWB guesses the language from the window title, for example <code>main.js - AI-App - Visual Studio Code</code>. Hold the same keys for a moment (0.35 s or more) and describe what you need, such as "a Java method that retries with exponential backoff", and the code is pasted at the cursor. MWB never runs code that a model wrote.</p>
+<p class="small">Through the API, gpt-oss-120b explains code and suggests optimisations quickly. The local fallback for code is Qwen3.5 4B with thinking off; it explains code well and handles small refactors. For large changes, Claude Code or Copilot in the editor is the better tool. On the Performance profile a 30B mixture-of-experts coding model runs locally.</p>
+
+<h3><span class="n">9.6</span>End-of-day journal</h3>
+<p>At 18:30 MWB writes a journal of your working day: commits, meetings, time per project, notes, open items and tomorrow's calendar, as a Markdown file you own. Code gathers and renders every fact; the model writes only the prose around them, and a checker removes any sentence it cannot tie to a fact. If no model answers, the journal is still written, with the facts alone.</p>
+<p class="small"><b>As built (Rev G).</b> Phase 4 was built and tested on 16 October (<code>skills/journal.py</code>, <code>sensors/activity.py</code>, <code>collectors/git.py</code>). Today's journal through Groq took 2.7–3.2 s <span class="tag meas">measured</span>, of which git took 1.9 s for 35 repositories <span class="tag meas">measured</span>. Sent mail is left out for now (<code>email = "off"</code>): your work mail is only in Outlook on the web, so it waits for your choice on how MWB may read it (decision 4).</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:jnl}}</div>
+  <figcaption><b>Figure 9.3</b>Journal pipeline as built. Code collects the facts and gives each one a tag. The tables are rendered from the facts directly; the model sees the same tagged lines and writes only the prose, which the checker filters before it joins the tables. The model never supplies a number, a name or a SHA on its own.</figcaption>
+</figure>
+<div class="tbl dense"><table>
+<thead><tr><th>Source</th><th>What MWB uses</th><th>How</th></tr></thead>
+<tbody>
+<tr><th scope="row">Git</th><td>The day's commits by your git email, on every branch: SHA, repository, branch, time, message, files, lines added and removed. For repositories with commits, how many files are not committed yet.</td><td><code>git log</code> in each repository under <code>repo_roots</code> (35 found on 16 October), four at a time, then <code>git status --porcelain</code>. Read fresh each time and not stored; nothing in a repository is changed.</td></tr>
+<tr><th scope="row">Meetings</th><td>Title, start, duration, label, summary, decisions and action items; your open action items from any day</td><td>MWB's own tables (§9.3)</td></tr>
+<tr><th scope="row">Active window</th><td>Every 10 s, the app in front and its project. Away after 5 minutes without keyboard or mouse, or with the screen locked.</td><td><code>GetForegroundWindow</code>, <code>GetWindowText</code> (only to pick the project), <code>GetLastInputInfo</code>; the <code>activity</code> table</td></tr>
+<tr><th scope="row">Dictation and notes</th><td>How many dictations and words; voice notes</td><td>The dictation history; <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd> into <code>journal_notes</code></td></tr>
+<tr><th scope="row">Sent mail</th><td>Subjects and recipients of sent mail, and how many arrived; never bodies. <i>Off until decision 4.</i></td><td>Classic Outlook through COM, when <code>email = "classic-outlook"</code></td></tr>
+<tr><th scope="row">Calendar</th><td>Tomorrow's meetings, 06:00 to 06:00</td><td>Classic Outlook through COM, Calendar folder</td></tr>
+</tbody></table></div>
+<div class="code-h">collectors/git.py runs this in each repository (shown as PowerShell)</div>
+<pre><code>git -C "&lt;repo&gt;" log --all --source --since="&lt;06:00&gt;" --until="&lt;now, or 06:00 next day&gt;" `
+    --author="&lt;your git email&gt;" --date=iso-strict --format="%x1e%H%x1f%h%x1f%cd%x1f%S%x1f%s" --shortstat</code></pre>
+<ul>
+  <li><b>The day runs from 06:00 to 06:00</b>, so late-night commits, like the 23:47 one below, land on the right day.</li>
+  <li><b>Facts are rendered by code:</b> the commit table, meetings with their labels, decisions and your actions, time per project, the working day and time away, dictation counts, voice notes, open items and tomorrow's calendar.</li>
+  <li><b>The model writes only</b> two or three summary sentences, one or two sentences per project, blockers and tomorrow's plan, as JSON. It sees each fact as a tagged line: <code>c:</code> a commit, <code>m:</code> a meeting, <code>a:</code> time on a project, <code>d:</code> dictation, <code>n:</code> a voice note, <code>e:</code> sent mail, <code>i:</code> an open action item, <code>t:</code> tomorrow's calendar. Every sentence must end with the tags of the facts it uses. Through the API it is gpt-oss-120b; the local fallback is Qwen3.5 4B.</li>
+  <li><b>The checker</b> keeps a tag only if it is one of the day's tags and its fact shares a word or a number with the sentence. It then drops the sentence if no tag is left, if it names a commit ID that git didn't report, or if it has a number that isn't in the facts (spelled-out numbers such as "three" count). A project paragraph for a name that isn't in the facts is dropped too. The footer says how many sentences were removed, so a made-up SHA or count cannot reach the journal.</li>
+  <li><b>The facts-only fallback.</b> A run at 18:30 uses the API, or the local model only on mains power with the CPU under 60 %. If neither answers, it tries again every 15 minutes, and after the third try writes the facts alone. When you ask for the journal, the local model may run at once, and if nothing answers the facts-only journal is written straight away.</li>
+  <li><b>Projects</b> come from the window title: a repository's name in it (MTMS in <code>Invoice.java - MTMS - Visual Studio Code</code>), the folder name in VS Code's title, or otherwise Coding, Email, Chat, Browsing, Terminal or Other. Projects under 5 minutes go into Other. Meeting time counts as Meetings, not as the call app. Time away is the rest of the working day, so the rows add up to it exactly.</li>
+  <li><b>Window titles are used only to pick the project.</b> They are never stored or logged; the <code>activity</code> table keeps the app and the project. Apps and titles matching the denylist are kept as "Private", with no app name, and nothing is recorded while MWB is paused.</li>
+  <li><b>When.</b> At 18:30; or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>, the Today page or the tray, which open the journal when it's done. If the laptop was off at 18:30, yesterday's journal is written the next time MWB runs, as long as that day had activity or a meeting. A notification says "Your journal for Monday is ready. Press Ctrl+Alt+J to open it."</li>
+  <li><b>Your file.</b> <code>Documents\MWB\journal\YYYY-MM-DD.md</code>, in the Documents folder wherever Windows keeps it. MWB records the SHA-256 of what it wrote; if you have edited the file, a later run writes <code>YYYY-MM-DD (new HHMM).md</code> beside it instead of over it.</li>
+  <li><b>On the Today page</b> a Journal section lists the last ten days, and <code>/journal/&lt;day&gt;</code> shows one, with the tags as blue chips, Copy Markdown, Write again, and Open as Outlook draft. The draft has the tags removed and your manager's address (<code>manager_email</code>) in the To line; it opens for you to check and send. MWB never sends it.</li>
+</ul>
+
+<figure class="fig">
+<div class="journal">
+  <div class="j-bar"><span>Documents\MWB\journal\2026-10-05.md</span><span>written 18:30 by MWB</span></div>
+  <div class="j-body">
+    <h4>Monday, 5 October 2026</h4>
+    <p>Most of the day went to MTMS: the invoice export fix and sprint planning.<span class="cite">m:2</span><span class="cite">a:MTMS</span> In the evening you shipped the glass layout and two rounds of UI polish in AI-App.<span class="cite">c:a445845</span><span class="cite">c:ce945ae</span> One blocker is still open: access to the staging Kafka cluster.<span class="cite">m:1</span></p>
+    <h5>Code · 4 commits · +354 −26</h5>
+    <div class="tbl"><table>
+      <thead><tr><th>SHA</th><th>Time</th><th>Repo</th><th>Message</th><th class="num">Lines</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ce945ae</td><td class="mono">23:47</td><td>AI-App</td><td>more ui</td><td class="num">+138 −14</td></tr>
+        <tr><td class="mono">319f58e</td><td class="mono">23:31</td><td>AI-App</td><td>added more ui</td><td class="num">+170 −8</td></tr>
+        <tr><td class="mono">b25ff59</td><td class="mono">23:13</td><td>AI-App</td><td>minor fix rail</td><td class="num">+2 −2</td></tr>
+        <tr><td class="mono">a445845</td><td class="mono">22:45</td><td>AI-App</td><td>added glass mode</td><td class="num">+44 −2</td></tr>
+      </tbody>
+    </table></div>
+    <h5>Meetings · 2 h 05 m · Work 1 h 35 m · Timepass 30 m</h5>
+    <ul>
+      <li><span class="mono">09:30</span> Daily stand-up · 15 m <span class="tag work">Work</span> Raised the Kafka access blocker.</li>
+      <li><span class="mono">11:00</span> Sprint 42 planning · 50 m <span class="tag work">Work</span> Decided: the caching layer moves to the next sprint. Your action: share the demo build by Wednesday.</li>
+      <li><span class="mono">15:00</span> 1:1 with lead · 30 m <span class="tag work">Work</span></li>
+      <li><span class="mono">17:30</span> Team birthday call · 30 m <span class="tag tp">Timepass</span></li>
+    </ul>
+    <h5>Time by project</h5>
+    <div class="bars">
+      <div class="bar-row"><span>MTMS</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="v">3 h 40 m</span></div>
+      <div class="bar-row"><span>Meetings</span><span class="track"><span class="fill" style="width:57%"></span></span><span class="v">2 h 05 m</span></div>
+      <div class="bar-row"><span>AI-App</span><span class="track"><span class="fill" style="width:30%"></span></span><span class="v">1 h 05 m</span></div>
+      <div class="bar-row"><span>Email</span><span class="track"><span class="fill" style="width:23%"></span></span><span class="v">50 m</span></div>
+    </div>
+    <h5>Email · 6 sent · 23 received</h5>
+    <p>Sent: Re: Staging Kafka access · Demo build for Wednesday · Invoice export fix deployed to QA, and 3 more.</p>
+    <h5>Open items</h5>
+    <ul><li>Staging Kafka access, blocked since Friday.<span class="cite">m:1</span></li><li>Demo build by Wednesday evening.<span class="cite">m:2</span></li></ul>
+    <h5>Tomorrow</h5>
+    <p><span class="mono">10:00</span> Design review · <span class="mono">16:00</span> Demo dry run</p>
+  </div>
+</div>
+<figcaption><b>Figure 9.4</b>Sample journal. The commits are real, taken from AI-App's git log for 5 October 2026. Meetings, email and project times are illustrative. Blue chips are the citations the checker tested: <code>c:</code> commit, <code>m:</code> meeting, <code>a:</code> time on a project. The layout follows what <code>render()</code> writes, except that the file has a table where this sample draws bars.</figcaption>
+</figure>
+
+<h3><span class="n">9.7</span>Ask MWB: answers by voice</h3>
+<p>The same double tap of Caps Lock answers questions. MWB treats what you said as a question when the cursor is not in a text box, or when you start with the wake word, "MWB" by default. You can change the word, or make the double tap always write or always answer.</p>
+<div class="tbl dense"><table>
+<thead><tr><th>You ask</th><th>Where the answer comes from</th></tr></thead>
+<tbody>
+<tr><td>"MWB, what did I commit today?"</td><td>Your commits from git, read by code as the journal does. The model only phrases the reply, and the SHAs are real. <i>Not built yet:</i> answers don't read git yet; today's commits are in the journal (§9.6).</td></tr>
+<tr><td>"When is my next meeting, and who is in it?"</td><td>Your classic Outlook calendar for the next 12 hours, through COM</td></tr>
+<tr><td>"What did Priya say about the Kafka access?"</td><td>Full-text search over meeting transcripts, then a short summary with timestamps</td></tr>
+<tr><td>"What are my open action items?"</td><td>The action items table, with the dates worked out by code</td></tr>
+<tr><td>"What did I dictate into Teams?"</td><td>Your dictation history</td></tr>
+<tr><td>"Explain this", with text selected</td><td>The selected text, explained by the language model</td></tr>
+<tr><td>"What's the difference between HashMap and ConcurrentHashMap?"</td><td>The language model's own knowledge: the API by default, or the local model when the API can't be reached or answers are set to local-only</td></tr>
+</tbody></table></div>
+<ul>
+  <li><b>Where the answer appears:</b> in the indicator's place, like Wispr Flow: a dark panel fades and rises out of the pill at the bottom centre of the screen, and the text streams in as it is written (§13.3, Figure 13.4). It never takes the keyboard focus. Esc or × closes the panel, Copy puts the answer on the clipboard, Insert types it at the cursor, and another double tap within 30 s, while the answer is on screen, asks a follow-up in the same conversation.</li>
+  <li><b>Citations:</b> each fact MWB finds carries a tag, such as [M3 10:04] for a meeting at a time, [A2] for an action item, [C1] for a calendar item or [D4] for a dictation. The model must cite those tags. Any tag that doesn't match a fact is removed, and the panel says how many were.</li>
+  <li><b>Speed on this laptop:</b> answers about your own day are quick, because the facts come straight from the database: 10 questions about a made-up day took 0.6–1.7 s each through Groq, all with correct facts <span class="tag meas">measured</span>. On the local fallback, Qwen3.5 2B shows its first words after about 1.2 s and then writes about 10 tokens a second <span class="tag meas">measured</span>.</li>
+  <li><b>Same rules as everywhere else:</b> facts come from your data and are cited, only text goes to the API (never for a skill set to local-only), and audio never leaves the laptop.</li>
+</ul>
+</section>

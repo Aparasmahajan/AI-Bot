@@ -1,0 +1,300 @@
+
+<section id="s12" class="sec">
+<h2><span class="n">12</span>Profiles, effort and models</h2>
+<p class="small"><i>Rev G:</i> profiles, calibration, effort levels and the setup screen are Phase 5 and not built yet. On this laptop MWB runs as Lean with fixed settings from <code>mwb\config\default.toml</code> (§16.3).</p>
+<p class="lead">The same code runs on every machine. A profile decides which models it uses, how many threads they get and what stays warm. An effort governor decides how hard MWB works from minute to minute (§12.5), and MWB re-tunes itself when you move it to another laptop (§12.6).</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:tiers}}</div>
+  <figcaption><b>Figure 12.1</b>Profile ladder. On Lean, language work goes to the API for now; the speeds are for the local models each profile can run, estimated for 4-bit models until Phase 0 measures them. Each step up turns on features the step below cannot afford.</figcaption>
+</figure>
+
+<h3><span class="n">12.1</span>Detection and calibration</h3>
+<ol>
+  <li><b>Probe at start-up:</b> total and free RAM, number of memory sticks and their speed (which gives bandwidth), GPU and VRAM (DXGI, plus <code>nvidia-smi</code> when present), any NPU (device class ComputeAccelerator), CPU features such as AVX-512 VNNI, and the power source.</li>
+  <li><b>Calibrate once</b>, in about 60 s, and again whenever the hardware changes: speech speed on a bundled clip, the API's response time, tokens per second for the local fallback model on a fixed prompt, and typical free memory.</li>
+  <li><b>Pick a profile</b> and write it to the config. You can override it, for example <code>profile = "lean"</code>.</li>
+  <li><b>Choose models</b> from <code>models.yaml</code>, which lists candidates for each capability, best first. The first one that fits the profile and passes the memory guard wins.</li>
+</ol>
+
+<h3><span class="n">12.2</span>What each profile runs</h3>
+<div class="tbl dense"><table>
+<thead><tr><th>Capability</th><th>Lean<br><span class="small">this laptop today</span></th><th>Balanced<br><span class="small">+ second 16 GB stick</span></th><th>Performance<br><span class="small">next laptop with a GPU</span></th><th>Workstation<br><span class="small">64 GB+, 24 GB+ VRAM</span></th></tr></thead>
+<tbody>
+<tr><th scope="row">Dictation speech</th><td>Parakeet int8, CPU, 4 threads, loaded on demand</td><td>Same, kept warm through work hours</td><td>Parakeet on the GPU, or a streaming model for text as you speak</td><td>Same, plus a large model for difficult audio</td></tr>
+<tr><th scope="row">Hindi and Hinglish</th><td>whisper small for every meeting (decision 5); large-v3-turbo only overnight</td><td>whisper small; large-v3-turbo overnight (0.45× real time on this CPU)</td><td>whisper turbo on the GPU; evaluate Qwen3-ASR</td><td>Same</td></tr>
+<tr><th scope="row">Meeting speech</th><td>whisper small through whisper-cli, 2 threads, below normal, live on mains power and after the call on battery</td><td>Plus diarization (Sortformer, up to 4 speakers)</td><td>Granite Speech 4.1 2B or Cohere Transcribe on the GPU</td><td>Diarizing transcribers, long-form batch</td></tr>
+<tr><th scope="row">Language model, interactive</th><td>API (Groq, gpt-oss-120b on low reasoning; gpt-oss-20b for labels and short jobs); local fallback Qwen3.5 2B, or 4B for code</td><td>API, or local Qwen3.5 4B kept warm through work hours</td><td>Qwen3.5 9B on the GPU</td><td>Gemma 4 26B-A4B or 31B class</td></tr>
+<tr><th scope="row">Language model, batch</th><td>API; the 4B fallback at night if the API is down</td><td>API or local 4B</td><td>9B</td><td>26B–31B, long context</td></tr>
+<tr><th scope="row">Code</th><td>API; local fallback Qwen3.5 4B</td><td>API or local Qwen3.5 9B</td><td>Qwen3-Coder 30B-A3B or gpt-oss-20b</td><td>Larger coding models</td></tr>
+<tr><th scope="row">Live features</th><td>None</td><td>Rolling meeting notes every 10 minutes</td><td>Live captions, "what did I miss"</td><td>Search across months of meetings</td></tr>
+<tr><th scope="row">MWB peak memory</th><td>~1.2 GB on the API route; ≤ 3.5 GB on the local fallback</td><td>≤ 6 GB</td><td>≤ 12 GB RAM plus VRAM</td><td>Set by you</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">12.3</span>Why the second memory stick matters</h3>
+<p>Writing each token means reading the whole model from RAM once, so tokens per second is at most usable bandwidth divided by model size. With one stick, roughly 19 of the theoretical 25.6 GB/s is usable; with two, about 38. People read at roughly 5 to 7 tokens per second. This is also why language work goes to the API for now: on one stick Qwen3.5 2B writes 10.3 tokens per second and 4B 3.6 (measured), while a hosted model such as Groq's writes hundreds.</p>
+<div class="tbl"><table>
+<thead><tr><th>Model at 4-bit</th><th class="num">Size</th><th class="num">One stick today</th><th class="num">Two sticks</th><th>Good for</th></tr></thead>
+<tbody>
+<tr><th scope="row">Qwen3.5 0.8B</th><td class="num">~0.6–1.0 GB</td><td class="num">~25 tok/s</td><td class="num">~35 tok/s</td><td>Dictation polish, short rewrites</td></tr>
+<tr><th scope="row">Qwen3.5 2B <span class="small">on this laptop</span></th><td class="num">1.27 GB</td><td class="num">10.3 tok/s</td><td class="num">~18 tok/s</td><td>The everyday local fallback: email, labels, notes</td></tr>
+<tr><th scope="row">Qwen3.5 4B <span class="small">on this laptop</span></th><td class="num">2.71 GB</td><td class="num">3.6 tok/s</td><td class="num">~6 tok/s</td><td>Code, the journal, image chat</td></tr>
+<tr><th scope="row">Qwen3.5 9B</th><td class="num">~5.8–6.6 GB</td><td class="num">~3 tok/s</td><td class="num">~6 tok/s</td><td>Too tight on Lean</td></tr>
+</tbody></table></div>
+<p class="small">The 2B and 4B speeds were measured on this laptop on 12 October with llama-bench: 4 threads, CPU build, normal background load and a download running. The others, and every two-stick figure, are estimates. The smallest model is limited by compute rather than bandwidth. On the Iris Xe through Vulkan, prompts are read much faster: 211 tokens a second against 42 on the CPU for the 2B, and 90 against 13 for the 4B. Writing is slower or about the same: 7.7 against 10.3 for the 2B, and 3.4 against 3.6 for the 4B. So long inputs such as meeting notes and the journal go to Vulkan, and short chats stay on the CPU. Memory is what each model keeps for itself: 1.3 GB (2B) and 2.4 GB (4B), or 3.4 GB with the 4B's vision part. Task Manager may show more, because it also counts model-file pages that Windows drops when it needs the room.</p>
+
+<h3><span class="n">12.4</span>Model shortlist</h3>
+<div class="tbl dense"><table>
+<thead><tr><th>Role</th><th>Candidates, October 2026</th><th>Why</th></tr></thead>
+<tbody>
+<tr><th scope="row">English speech</th><td>Parakeet TDT 0.6B v2 int8 (keep)</td><td>Measured here: fast, no recognition errors on the test clip. About 6 % average WER on the Open ASR Leaderboard.</td></tr>
+<tr><th scope="row">Hindi and Hinglish</th><td>whisper.cpp small or large-v3-turbo, quantized; evaluate Qwen3-ASR 0.6B</td><td>Parakeet v2 is English only. v3 adds 25 European languages, not Hindi.</td></tr>
+<tr><th scope="row">Live captions, later</th><td>NVIDIA Nemotron Speech Streaming, int4 ONNX on CPU</td><td>Reported 0.56 s latency and 8.2 % WER on CPU. Check licence and Windows support.</td></tr>
+<tr><th scope="row">Best quality, GPU</th><td>Granite Speech 4.1 2B, Cohere Transcribe 2B, Canary-Qwen 2.5B</td><td>Top of the 2026 leaderboard at 5.3–5.6 % WER, too heavy for this CPU.</td></tr>
+<tr><th scope="row">Diarization</th><td>Sortformer v2 streaming (ONNX, 4 speakers); MOSS-Transcribe-Diarize on GPU</td><td>Names the speakers inside the Them lane.</td></tr>
+<tr><th scope="row">Language, default</th><td>API: Groq <code>openai/gpt-oss-120b</code>, with <code>gpt-oss-20b</code> for quick jobs; the same provider list as AI-App</td><td>Fast, nothing loaded locally, and the key already exists. Groq retired all of its Qwen models in 2026, as AI-App's notes record.</td></tr>
+<tr><th scope="row">Local fallback, now</th><td>Qwen3.5 2B (everyday) and 4B (code, journal), 4-bit, from lmstudio-community; downloaded 12 Oct</td><td>Thinking off for speed. Reads images natively, 262K context, Apache 2.0. Replaced Qwen2.5, as shown below.</td></tr>
+<tr><th scope="row">Local upgrade, later</th><td>Qwen3.5 9B; Gemma 4 E4B or Phi-4-mini as alternatives</td><td>On a laptop with more memory, after checking that llama.cpp supports it.</td></tr>
+<tr><th scope="row">GPU LLM</th><td>Qwen3.5 9B, Gemma 4 26B-A4B, gpt-oss-20b, Qwen3-Coder 30B-A3B</td><td>Performance and Workstation profiles.</td></tr>
+</tbody></table></div>
+<p>Phase 0 runs the same MWB tasks (a meeting summary, an email draft, a Work/Timepass label and a code explanation) through the API and through the local fallback, and you score the answers side by side without knowing which is which. That is the first sync check (§12.7). A later local upgrade is picked the same way, after checking that the llama.cpp build supports its architecture.</p>
+<h4>Why Qwen3.5 replaced Qwen2.5</h4>
+<div class="tbl dense"><table>
+<thead><tr><th>Published score</th><th class="num">Qwen2.5-Coder 3B</th><th class="num">Qwen2.5-Coder 7B</th><th class="num">Qwen3.5 2B</th><th class="num">Qwen3.5 4B</th></tr></thead>
+<tbody>
+<tr><th scope="row">LiveCodeBench, coding</th><td class="num">10.8</td><td class="num">18.2</td><td class="num">—</td><td class="num">55.8</td></tr>
+<tr><th scope="row">MMLU-Pro, knowledge</th><td class="num">35.2</td><td class="num">45.6</td><td class="num">55.3</td><td class="num">79.1</td></tr>
+<tr><th scope="row">IFEval, following instructions</th><td class="num">44.2</td><td class="num">58.6</td><td class="num">61.2</td><td class="num">89.8</td></tr>
+<tr><th scope="row">Context</th><td class="num">32K</td><td class="num">32K</td><td class="num">262K</td><td class="num">262K</td></tr>
+<tr><th scope="row">Reads images</th><td class="num">no</td><td class="num">no</td><td class="num">yes</td><td class="num">yes</td></tr>
+</tbody></table></div>
+<p class="small">Sources: the Qwen2.5-Coder technical report (Tables 16 and 20; LiveCodeBench July–September 2024) and the Qwen3.5 2B and 4B model cards (LiveCodeBench v6). The 2B figures are with thinking off. The 4B card doesn't say, and Qwen3.5 thinks by default, so its figures are probably with thinking on. MWB runs both with thinking off for speed, which gives back some of that lead. The two LiveCodeBench versions use different problems, so compare them loosely, but the gap is too large to change the conclusion. On this laptop, five small Python tasks checked by tests (12 October, thinking off) gave the same order: Qwen2.5-Coder 3B passed 2, Qwen3.5 2B passed 3 and Qwen3.5 4B passed 4.</p>
+<div class="code-h">config/models.yaml (excerpt)</div>
+<pre><code><span class="c"># capability -&gt; candidates, best first. The first that fits the profile and the memory guard wins.</span>
+asr.dictation:
+  - {id: parakeet-tdt-0.6b-v2-int8, engine: onnx-asr,      ram_gb: 1.0, langs: [en], profiles: [lean, balanced]}
+  - {id: parakeet-tdt-0.6b-v2,      engine: onnx-asr-cuda, vram_gb: 2.0, langs: [en], profiles: [performance, workstation]}
+asr.multilingual:
+  - {id: whisper-large-v3-turbo-q5_0, engine: whisper.cpp, ram_gb: 1.3, langs: [hi, en, auto], profiles: [performance]}     <span class="c"># on this laptop, overnight only</span>
+  - {id: whisper-small,               engine: whisper.cpp, ram_gb: 1.1, langs: [hi, en, auto], profiles: [lean, balanced]}   <span class="c"># on this laptop</span>
+llm.api:       <span class="c"># first choice for every language skill not set to local-only</span>
+  - {id: openai/gpt-oss-120b, engine: openai-compatible, base: "https://api.groq.com/openai/v1"}
+  - {id: openai/gpt-oss-20b,  engine: openai-compatible, base: "https://api.groq.com/openai/v1"}   <span class="c"># quick jobs</span>
+llm.local:     <span class="c"># the fallback, kept in sync by the same prompts, schemas and the weekly sync check</span>
+  - {id: qwen3.5-4b-q4_k_m, engine: llama-server, ram_gb: 2.4, thinking: false, profiles: [lean, balanced]}   <span class="c"># on this laptop: code, journal</span>
+  - {id: qwen3.5-2b-q4_k_m, engine: llama-server, ram_gb: 1.3, thinking: false, profiles: [lean]}             <span class="c"># on this laptop: fits next to speech</span></code></pre>
+
+<h3><span class="n">12.5</span>Effort levels</h3>
+<p>The profile says what the machine can do. The effort level says how much of that MWB uses right now. A governor in the core sets a level from E1 to E4 every 30 seconds and whenever something changes, such as the charger being unplugged. A stronger machine gets a higher ceiling, so the same build works harder on it with no change to code or settings.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:effort}}</div>
+  <figcaption><b>Figure 12.2</b>The effort governor. The hardware profile sets the ceiling; power, CPU load and free memory decide how close to it MWB runs at any moment.</figcaption>
+</figure>
+<div class="tbl dense"><table>
+<thead><tr><th>Knob</th><th>E1 · low</th><th>E2 · normal</th><th>E3 · high</th><th>E4 · max</th></tr></thead>
+<tbody>
+<tr><th scope="row">Threads, interactive speech</th><td>2</td><td>4</td><td>4–6</td><td>all fast cores</td></tr>
+<tr><th scope="row">Threads, background work</th><td>1</td><td>2</td><td>4</td><td>6 or more</td></tr>
+<tr><th scope="row">Dictation polish by LLM</th><td>off</td><td>when you hold Shift</td><td>in email and chat apps</td><td>everywhere</td></tr>
+<tr><th scope="row">Hindi and Hinglish decoding</th><td>greedy, small model</td><td>beam 2</td><td>beam 5</td><td>beam 5, large-v3-turbo</td></tr>
+<tr><th scope="row">Diarization</th><td>off</td><td>off</td><td>on</td><td>on, names from the calendar</td></tr>
+<tr><th scope="row">Local LLM, when used</th><td>2B</td><td>2B, or 4B when there is room</td><td>4B–9B</td><td>largest that fits</td></tr>
+<tr><th scope="row">LLM passes</th><td>1</td><td>1</td><td>2: draft, self-check</td><td>3: draft, check, polish</td></tr>
+<tr><th scope="row">Context window</th><td>4k tokens</td><td>8k</td><td>16k</td><td>32k or more</td></tr>
+<tr><th scope="row">Models kept warm</th><td>none</td><td>speech, while you are active</td><td>speech and LLM in work hours</td><td>all, all day</td></tr>
+<tr><th scope="row">Live features</th><td>none</td><td>none</td><td>rolling notes every 10 min</td><td>live captions</td></tr>
+<tr><th scope="row">Night second pass (AC, idle)</th><td>off</td><td>off</td><td>re-write notes and journal</td><td>re-transcribe with a larger model, then re-write</td></tr>
+</tbody></table></div>
+<h4>You choose the level</h4>
+<p>On every new device, a setup screen shows what MWB found and pre-selects the suggested level. You can keep it or pick another. You decide four things: a fixed level, or automatic adjustment within a range you set; what happens on battery; a different level for any feature, for example High for the journal and Balanced for dictation; and whether to download the models your choice needs now or later. Levels the hardware can run, but slowly, come with a warning. Levels it cannot run at all are greyed out with the reason. The choice is saved for that machine only, and Settings → Performance reopens the same screen at any time.</p>
+<figure class="fig">
+  <div class="mock" role="img" aria-label="Mockup of the MWB setup screen on a new device">
+    <div class="mock-h"><span>MWB setup · new device detected</span><span>mockup</span></div>
+    <div class="mock-b">
+      <p class="mock-found"><b>Found</b> Intel Core i7-1185G7 · 16 GB, one stick · Iris Xe · no NPU<br><b>Tested</b> speech 5.5× real time · API first words ~0.6 s · local fallback 10.3 tokens/s<br><b>Suggests</b> Lean profile · Balanced effort (E2)</p>
+      <p class="mock-q">How hard should MWB work on this laptop?</p>
+      <div class="opts">
+        <div class="opt"><span class="dot"></span><span class="lv">E1</span><span class="ds"><b>Battery saver.</b> Smallest models, 2 threads, nothing kept warm.</span></div>
+        <div class="opt on"><span class="dot"></span><span class="lv">E2</span><span class="ds"><b>Balanced.</b> Suggested for this laptop. Speech stays warm while you are active.</span></div>
+        <div class="opt"><span class="dot"></span><span class="lv">E3</span><span class="ds"><b>High.</b> Two-pass notes and speaker separation. Slower on this laptop.</span></div>
+        <div class="opt off"><span class="dot"></span><span class="lv">E4</span><span class="ds"><b>Max.</b> Not available on this laptop: needs a GPU, or 32 GB in two sticks.</span></div>
+      </div>
+      <div class="chk"><span class="tick"></span><span>Adjust automatically between Battery saver and my choice: lower on battery, back up when plugged in.</span></div>
+      <div class="perf"><span class="sel">Journal <b>High</b></span><span class="sel">Meetings <b>Balanced</b></span><span class="sel">Dictation <b>Balanced</b></span><span class="sel">Email and code <b>Balanced</b></span></div>
+      <div class="mock-f"><span>Writing uses your API key. Parakeet, whisper and the Qwen3.5 fallback are already here.</span><span class="btns"><span class="btn">Later</span><span class="btn go">Add API key</span></span></div>
+    </div>
+  </div>
+  <figcaption><b>Figure 12.3</b>Setup screen on a new device, as a mockup. The suggestion is pre-selected and any level the hardware can run is selectable. E4 is greyed out because this laptop has no GPU and one memory stick.</figcaption>
+</figure>
+<h4>How automatic adjustment works</h4>
+<ul>
+  <li><b>Suggested level by profile:</b> Lean E2, with E3 for the night pass; Balanced E3; Performance and Workstation E4. This is only the starting point on the setup screen.</li>
+  <li><b>Down</b>, when automatic is on: one level on battery and two below 30 % charge; one level when the CPU stays above 80 % for 30 s or free memory drops below 2 GB. It never goes below the lowest level you set.</li>
+  <li><b>Up</b>, when automatic is on: one level when on AC power, idle for 10 minutes and with room in memory, never above the highest level you set.</li>
+  <li><b>Fixed level:</b> the rules above are off, except the memory guard (§11.2), which still defers work rather than let MWB run out of memory.</li>
+</ul>
+
+<h3><span class="n">12.6</span>Running on another laptop</h3>
+<p>Settings are split in two. What belongs to you travels with the app: hotkeys, dictionary, snippets, the per-app recording policy, privacy choices and, if you copy it, your history. What belongs to the machine never travels: profile, your effort choice for that machine, thread counts, model choices and calibration results. MWB works those out on the machine itself and files them under a hardware fingerprint built from the CPU model, RAM size and channels, GPU and VRAM, and any NPU.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:move}}</div>
+  <figcaption><b>Figure 12.4</b>First start on any laptop. MWB measures and suggests, you choose the effort on the setup screen, and only then are models fetched. The check runs on every start, so a RAM upgrade counts as a new machine too.</figcaption>
+</figure>
+<ol>
+  <li>Install MWB on the new laptop, or copy the portable folder. Copy <code>%APPDATA%\MWB</code> for your settings and, if you want your history, <code>%LOCALAPPDATA%\MWB\mwb.db</code> and <code>Documents\MWB\journal</code>.</li>
+  <li>On first start the fingerprint is new, so MWB calibrates for about a minute and opens the setup screen (Figure 12.3). It shows what it found and pre-selects a suggested profile and effort level, and you choose. It then lists the models your choice needs, with download sizes.</li>
+  <li>It downloads them after you confirm and reuses any already on the machine, such as files in the Hugging Face cache.</li>
+  <li>Optionally, run the night second pass over the last 30 days so older meetings get the better model's transcripts and notes.</li>
+</ol>
+<p>Adding the second memory stick to this EliteBook takes the same path: the next start sees 32 GB in dual channel, suggests Balanced, and lets you choose again.</p>
+<p>If you always want, for example, the highest level a machine can run, say so once with <code>effort_preference = "max-available"</code> in your own settings. Every new device then pre-selects that on its setup screen, and you still confirm it.</p>
+<div class="code-h">Where each kind of setting lives</div>
+<pre><code>%APPDATA%\MWB\config.toml                        <span class="c"># yours, travels: hotkeys, dictionary, recording policies, privacy,</span>
+                                                 <span class="c"># effort_preference = "suggested" | "max-available" | "battery-saver"</span>
+%LOCALAPPDATA%\MWB\machine\&lt;fingerprint&gt;.toml     <span class="c"># this machine only, written by the setup screen</span></code></pre>
+<div class="code-h">%LOCALAPPDATA%\MWB\machine\&lt;fingerprint&gt;.toml on this EliteBook (example)</div>
+<pre><code>[hardware]                       <span class="c"># detected at setup</span>
+cpu = "Intel Core i7-1185G7"
+ram_gb = 16
+memory_channels = 1
+gpu = "Intel Iris Xe (shared memory)"
+npu = false
+
+[calibration]                    <span class="c"># measured at setup</span>
+speech_5s_phrase_s = 0.91
+api_first_words_s = 0.6          <span class="c"># measured by P0-4 on 13 Oct: 0.58 s median</span>
+local_tokens_per_s = 10.3        <span class="c"># Qwen3.5 2B, measured 12 Oct</span>
+
+[local_llm]                      <span class="c"># found on this machine: the fallback route</span>
+server = '%USERPROFILE%\Tools\llamacpp\cpu\llama-server.exe'     <span class="c"># build 11015</span>
+model = '%USERPROFILE%\Tools\llamacpp\models\Qwen3.5-2B-Q4_K_M.gguf'
+model_large = '%USERPROFILE%\Tools\llamacpp\models\Qwen3.5-4B-Q4_K_M.gguf'   <span class="c"># when there is room</span>
+
+[effort]                         <span class="c"># your choice on the setup screen</span>
+mode = "auto"                    <span class="c"># auto: adjust inside the range; fixed: always "highest"</span>
+lowest = "E1"
+highest = "E2"
+on_battery = "lower"             <span class="c"># lower | keep</span>
+
+[effort.by_feature]
+journal = "E3"                   <span class="c"># runs at night on AC power, so it can afford more</span></code></pre>
+
+<h3><span class="n">12.7</span>API first, local model in sync</h3>
+<p>Your decision on 12 October: for now, language skills use an API key, because a local language model needs 2 to 3 GB of memory that this laptop rarely has free. Speech always runs locally. A local model already on the laptop is kept in sync as the fallback, so MWB keeps working without the network and can go fully local on a bigger laptop. On 13 October you saved MWB's own Groq key with <code>Set API key.cmd</code>, which checks it with Groq and keeps it in Windows Credential Manager as <code>MWB/api-key/groq</code>, and you said work text may go to Groq. On 12 October, at your request, Qwen3.5 2B and 4B and whisper large-v3-turbo were downloaded (5.2 GB, every file checked against Hugging Face), and Qwen2.5 was deleted for good.</p>
+<div class="tbl dense"><table>
+<thead><tr><th>Capability</th><th>Runs</th><th>On this laptop now</th><th>API option</th></tr></thead>
+<tbody>
+<tr><th scope="row">Speech to text, English</th><td>Local, always</td><td>Parakeet TDT 0.6B v2 int8, 631 MB, in the Hugging Face cache</td><td>Not needed. Audio never leaves the laptop.</td></tr>
+<tr><th scope="row">Speech to text, Hindi and Hinglish</th><td>Local</td><td>whisper small (487 MB, copied from a verified file already here) for every day, and large-v3-turbo (574 MB, downloaded 12 Oct) for overnight re-runs. Both are in %LOCALAPPDATA%\MWB\models.</td><td>Not needed</td></tr>
+<tr><th scope="row">Language model: notes, labels, email, code, journal, answers</th><td>API first, for now</td><td>Fallback: Qwen3.5 2B, or 4B for code and the journal, with thinking off, on llama.cpp build 11015 in Tools\llamacpp.</td><td>Groq as in AI-App (<code>openai/gpt-oss-120b</code>) by default; OpenAI, OpenRouter, Gemini or a company Azure OpenAI endpoint through the same OpenAI-compatible client</td></tr>
+<tr><th scope="row">Voice activity, diarization</th><td>Local</td><td>AI-App's VAD is plain code with no model. Sortformer comes later.</td><td>Not needed</td></tr>
+</tbody></table></div>
+<h4>How the local model is kept in sync</h4>
+<ol>
+  <li><b>One set of prompts, one output check.</b> Each skill has a single prompt template and a single JSON schema. The citation validator and the SHA check run on answers from both routes.</li>
+  <li><b>One contract.</b> The API and llama-server both speak OpenAI-compatible chat completions, so the router changes only the address and the model name.</li>
+  <li><b>A sync check.</b> Ten saved test prompts, one or two per skill, run through both routes in Phase 0, after any change to a prompt or a model, and once a week on AC power. As built, the core starts <code>docs/bench/p0_4_sync_check.py</code> once a week on mains power with the CPU under 60 %; the script skips the local half when memory is short, and writes its results to <code>docs/bench/p0_4/</code>. Showing the result on the Today page is still to do.</li>
+  <li><b>Automatic fallback.</b> When the API fails (no network, no word within 20 s, a rate limit, a bad key or no key), the same request goes to the local model if the memory guard allows it. A result panel that was already streaming starts again and says the local model is writing. If the local model can't load, the result panel says why, and a batch job waits and is tried again every 10 minutes.</li>
+  <li><b>Local-only skills.</b> Any skill can be set to local-only in Settings, and its text then never leaves the laptop. Learning your email style starts that way, because it reads 30 sent emails at once.</li>
+  <li><b>Going local later.</b> On a laptop with more memory, moving a skill to the local route is one setting, and the local model can grow to Qwen3.5 9B.</li>
+</ol>
+<p><b>The trade-off.</b> The API makes language work fast, a paragraph in 1 to 2 s against 5 to 15 s locally, and keeps MWB near 1 GB. In return, the text of your notes, email, code and journal goes to the API provider. Audio never does. On 13 October you said work text may go to Groq. Any skill can still be set to local-only, or pointed at a company Azure OpenAI endpoint. MWB's database logs each request's size, route and time, never its text. Groq no longer offers Qwen, so the two routes use different model families, and the sync check is what keeps their output consistent. Keys are kept in Windows Credential Manager, the same DPAPI protection AI-App uses.</p>
+<p class="small">A longer, plain-language guide to these models, written for someone new to AI, is in <code>MWB\docs\MWB-QA.md</code> under question 7.</p>
+</section>
+
+<section id="s13" class="sec">
+<h2><span class="n">13</span>Hotkeys and indicator</h2>
+<p class="lead">Like AI-App, everything is driven from the keyboard, and like Wispr Flow, the most common actions are a double tap: <kbd>Caps Lock</kbd> twice to talk or ask, <kbd>Alt</kbd> twice to show or hide the indicator. Every other MWB shortcut is <kbd>Ctrl</kbd>+<kbd>Alt</kbd> plus one key, so none of them collides with AI-App's <kbd>Ctrl</kbd>+<kbd>Shift</kbd> set.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:keys}}</div>
+  <figcaption><b>Figure 13.1</b>Default key map. Orange Caps Lock: double-tap to talk or ask. Either Alt: double-tap to show or hide the indicator. Blue keys are the Ctrl+Alt shortcuts, including push-to-talk on the space bar.</figcaption>
+</figure>
+<div class="tbl"><table>
+<thead><tr><th>Keys</th><th>Action</th><th>How</th></tr></thead>
+<tbody>
+<tr><td class="nw"><kbd>Caps Lock</kbd> twice</td><td>Talk hands-free. MWB writes what you say, or answers if you ask a question (§9.7). Double-tap again, or pause for 2 s, to finish.</td><td>double-tap</td></tr>
+<tr><td class="nw"><kbd>Alt</kbd> twice</td><td>Show or hide the on-screen indicator (§13.3). The gesture can be changed in Settings.</td><td>double-tap</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd></td><td>Push-to-talk: speak while holding, release to type. On this laptop another app owns it, so MWB uses its fallback, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>.</td><td>hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd></td><td>Rewrite the selected text by voice. A quick press shows a hint.</td><td>hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>E</kbd></td><td>Explain the selected email or open Outlook item. Hold and speak to draft a reply.</td><td>press or hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>K</kbd></td><td>Explain and optimise the selected code. Hold and speak to describe code to write.</td><td>press or hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd></td><td>Start or stop meeting recording by hand</td><td>toggle</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>N</kbd></td><td>Voice note into today's journal: hold and speak, and it appears under Notes. A quick press shows a hint.</td><td>hold</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>J</kbd></td><td>Open the Today page, with the journal. With Shift added (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>J</kbd>), write today's journal now and open it.</td><td>press</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>P</kbd></td><td>Pause or resume everything: mic, sensors and all other hotkeys</td><td>toggle</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>W</kbd></td><td>Start MWB. Works even when MWB is not running (Phase 5; for now, double-click <code>Start MWB.cmd</code>).</td><td>press</td></tr>
+<tr><td class="nw"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd></td><td>Quit MWB</td><td>press</td></tr>
+<tr><td class="nw"><kbd>Esc</kbd></td><td>Cancel the dictation, or close the result panel or card. MWB registers Esc only while one of these is open.</td><td>press</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">13.1</span>How the keys are wired</h3>
+<ul>
+  <li><b>No keyboard hook.</b> Shortcuts are registered with the Win32 <code>RegisterHotKey</code> call and <code>MOD_NOREPEAT</code>. MWB never sees any other keystroke, so Defender has nothing keylogger-like to flag.</li>
+  <li><b>Double taps.</b> Caps Lock and Alt can't be registered as shortcuts without breaking their normal use, so the core checks the up and down state of only these two keys every 15 ms (<code>GetAsyncKeyState</code>). It cannot see any other key. Two clean taps within 350 ms count as a double tap. Caps Lock is put back to the state it had before the first tap, so the light never ends up changed. A single Alt tap still reaches your app as usual; in Office it briefly shows the key tips, and the second tap hides them again. Phase 0 task P0-2 checked that a 15 ms check catches at least 99 % of taps: it caught 50 of 50 for each key on 14 October, so no keyboard hook is needed.</li>
+  <li><b>Hold detection.</b> After a hold shortcut fires, the core polls <code>GetAsyncKeyState</code> every 15 ms, only while the key is down, to see when you let go. For Ctrl+Alt+E, K and R, a press shorter than 0.35 s is a press (explain); holding longer starts listening.</li>
+  <li><b>Conflicts.</b> Each binding has a fallback list and logs <code>[hotkey] ctrl+alt+k could not be registered</code> when another app owns it, the same pattern as AI-App's <code>tryRegister()</code>.</li>
+  <li><b>Starting MWB.</b> Setup adds a Start-menu shortcut with Ctrl+Alt+W as its shortcut key. Windows handles that key itself, which is why it works before MWB is running.</li>
+  <li><b>AltGr keyboards.</b> On layouts where Ctrl+Alt acts as AltGr, give each shortcut a Ctrl+Shift+Alt fallback in <code>[hotkeys]</code>; each binding is a list, and the first one Windows accepts wins.</li>
+  <li><b>Wispr Flow.</b> Turn it off before using MWB dictation, so only one app owns the mic and the push-to-talk keys.</li>
+</ul>
+
+<h3><span class="n">13.2</span>Tray and notifications</h3>
+<figure class="fig">
+  <div class="fig-frame">{{fig:tray}}</div>
+  <figcaption><b>Figure 13.2</b>Tray icon states. Recording always uses the orange ring, so you can tell from across the screen.</figcaption>
+</figure>
+<div class="tbl dense"><table>
+<thead><tr><th>Moment</th><th>Notification text</th></tr></thead>
+<tbody>
+<tr><td>Call detected, week 1</td><td>A card, not a notification: "Zoom is using the microphone. Weekly sync. Record this call? MWB transcribes it on this laptop and keeps no audio." Never for Zoom / Not this one / Record</td></tr>
+<tr><td>Personal app on the mic</td><td>The same card, with "This app is marked personal, so MWB always asks."</td></tr>
+<tr><td>New laptop detected (Phase 5)</td><td>"New hardware: 32 GB and an 8 GB GPU. Switching to the Performance profile. Download about 8 GB of models? Yes / Later"</td></tr>
+<tr><td>Recording starts</td><td>"Recording Sprint review. Press Ctrl+Alt+M to stop."</td></tr>
+<tr><td>Transcript ready</td><td>"Transcript ready: Sprint review · 45 min. Press Ctrl+Alt+J to open it."</td></tr>
+<tr><td>Notes ready</td><td>"Notes ready: Sprint review · Work · 45 min · 3 action items for you"</td></tr>
+<tr><td>Speech can't load</td><td>"Only 0.62 GB of memory is free, and speech needs 1.00 GB. Close some windows and try again."</td></tr>
+<tr><td>Journal waiting</td><td>"The journal is waiting: the API did not answer and the local model needs mains power and a calm CPU. Press Ctrl+Alt+Shift+J to write it now."</td></tr>
+<tr><td>Journal ready</td><td>"Your journal for Monday is ready. Press Ctrl+Alt+J to open it."</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">13.3</span>On-screen indicator</h3>
+<p>Like the small pill Wispr Flow keeps at the bottom of the screen, MWB can show a floating indicator that tells you at a glance what it is doing. It sits 48 px above the taskbar on the screen you are working on, lets clicks pass straight through (except on an open result panel), and never takes the keyboard focus, so your text still lands in your app. Double-tap Alt to show or hide it. MWB keeps working either way, and the tray icon still shows the state.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:skins}}</div>
+  <figcaption><b>Figure 13.3</b>The eight built-in skins in their four main states: blue while MWB listens, amber while it works, green when the text is in or the answer is ready. These are the tray's colours. During a meeting recording every skin adds the orange ring, and paused greys it out. Phase 1 built the Capsule; the other seven come in Phase 5.</figcaption>
+</figure>
+<p><b>Results in the indicator's place.</b> Answers, email and reply drafts, code explanations and rewrites open where the indicator is, as in Wispr Flow, not in a separate window. While MWB works, the pill shows three amber dots; then a dark panel, 440 px wide at 100 % scale, fades in and rises out of the pill, and the text streams into it. Up to nine lines show at once; the mouse wheel scrolls a longer answer, and a soft fade shows there is more above or below. The buttons sit in the panel's footer, with the main one on the right in blue.</p>
+<figure class="fig">
+  <div class="fig-frame">{{fig:panel}}</div>
+  <figcaption><b>Figure 13.4</b>A result in the indicator's place. The pill shows amber dots while MWB works, the panel rises out of it with the text and the buttons, and after Copy, Insert or Replace the pill shows a green tick for about 1.2 s. The pill and the panel are dark in both themes, as on screen.</figcaption>
+</figure>
+<div class="tbl dense"><table>
+<thead><tr><th>You do</th><th>What happens</th></tr></thead>
+<tbody>
+<tr><td>Click <b>Copy</b>, <b>Insert</b> or <b>Replace</b></td><td>The panel closes, and the pill shows a green tick with "Copied", "Inserted" or "Replaced" for about 1.2 s</td></tr>
+<tr><td>Click <b>Open diff in VS Code</b> or <b>Open as Outlook draft</b></td><td>That opens, and the panel stays, so you can still Replace or Copy afterwards</td></tr>
+<tr><td>Turn the mouse wheel over the panel</td><td>A long answer scrolls</td></tr>
+<tr><td>Press <kbd>Esc</kbd>, or click <b>×</b></td><td>The panel closes</td></tr>
+<tr><td>Ask something new while a panel is open</td><td>The new result replaces it</td></tr>
+</tbody></table></div>
+<p>Clicking the panel never takes the keyboard focus, so Insert and Replace still paste into the app you were typing in. A result you asked for shows even over a full-screen app. The "Record this call?" card is not a result, so it stays a small card at the bottom right (§13.2).</p>
+<div class="tbl dense"><table>
+<thead><tr><th>Setting</th><th>Choices</th><th>Default</th></tr></thead>
+<tbody>
+<tr><th scope="row">Show indicator</th><td>on, off</td><td>on</td></tr>
+<tr><th scope="row">Show or hide with</th><td>double-tap Alt, double-tap Right Ctrl, double-tap Shift, Ctrl+Alt+I, or none</td><td>double-tap Alt</td></tr>
+<tr><th scope="row">Skin</th><td>Capsule, Dot, Bars, Ring, Wave, Orb, Mic, Pixel, or your own</td><td>Capsule</td></tr>
+<tr><th scope="row">When visible</th><td>always, or only while listening and working</td><td>always</td></tr>
+<tr><th scope="row">Size</th><td>small, medium, large</td><td>small</td></tr>
+<tr><th scope="row">Position</th><td>bottom centre, top centre, any corner, or near the text cursor</td><td>bottom centre</td></tr>
+<tr><th scope="row">Opacity</th><td>40 % to 100 %</td><td>85 %</td></tr>
+<tr><th scope="row">Live words</th><td>show the last few words while you talk</td><td>on</td></tr>
+<tr><th scope="row">Full-screen apps</th><td>hide while a full-screen app is in front</td><td>on</td></tr>
+<tr><th scope="row">Sounds</th><td>a soft tick at start and finish</td><td>off</td></tr>
+</tbody></table></div>
+<ul>
+  <li><b>Your own skins:</b> put one PNG per state (<code>idle.png</code>, <code>listening.png</code>, <code>working.png</code>, <code>done.png</code>, <code>recording.png</code>, <code>paused.png</code>) in <code>%APPDATA%\MWB\skins\&lt;name&gt;\</code> and it appears in the Skin list. Changes apply without a restart.</li>
+  <li><b>How it is drawn:</b> a small layered Windows window with per-pixel transparency, painted with Pillow at the screen's DPI; the pill and the result panel share it. It redraws at 30 frames per second only while listening or working; when idle it is one still image. That adds roughly 10–15 MB to the core and no measurable CPU at rest <span class="tag est">estimate</span>.</li>
+  <li><b>Smooth, and light on the laptop:</b> the pill eases between its sizes (resting, listening, the tick) instead of jumping, and the voice bars rise quickly and fall gently, so they follow your voice without flickering. The drawing surface is kept and reused, and a listening frame takes about 0.3 ms <span class="tag meas">measured</span>. Size changes and fades run at 60 frames per second only for the 0.2 s they last. Streaming text redraws the panel at most 12 times a second, about 4 ms each, and each line of text is drawn once and reused <span class="tag meas">measured</span>.</li>
+  <li><b>Meetings stay visible:</b> while a meeting is being recorded, every skin shows the orange recording ring, and the tray keeps showing it even when the indicator is hidden.</li>
+</ul>
+</section>

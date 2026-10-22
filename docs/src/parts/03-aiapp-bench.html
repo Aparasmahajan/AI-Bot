@@ -1,0 +1,88 @@
+
+<section id="s5" class="sec">
+<h2><span class="n">5</span>What carries over from AI-App</h2>
+<p class="lead">AI-App (package <code>mahajan-workin-app</code>, shown as MWA) already solved the hardest part of this project: fast, accurate, local speech-to-text on this exact laptop. MWB reuses that work and leaves the rest behind.</p>
+
+<h3><span class="n">5.1</span>Reuse</h3>
+<div class="tbl"><table>
+<thead><tr><th>What</th><th>Where in AI-App</th><th>How MWB uses it</th></tr></thead>
+<tbody>
+<tr><th scope="row">Parakeet TDT 0.6B v2, int8 ONNX via onnx-asr</th><td class="mono">addon/parakeet/server.py</td><td>Becomes the speech worker. Same <code>POST /inference</code> contract. The model loads before the port opens, and it runs under <code>pythonw.exe</code> so no console window flashes.</td></tr>
+<tr><th scope="row">Engine fallback chain</th><td class="mono">transcribeOnce() in src/main.js</td><td>As built: Parakeet for dictation, and whisper-cli for meetings, because meetings are in Hindi and Hinglish too (decision 5). whisper-server was tried for meetings and dropped: it held 2.2 GB (§6.5).</td></tr>
+<tr><th scope="row">whisper.cpp flags that work on this CPU</th><td class="mono">scripts/start-whisper.bat</td><td>Keep <code>-nfa</code>. Flash attention crashed this build.</td></tr>
+<tr><th scope="row">Two-lane listening</th><td class="mono">lanes, onLaneFrame in app.js</td><td>You = microphone, Them = loopback. In meetings this tells you who spoke without any extra model. Windows sends loopback audio only while something plays, so MWB fills the gaps with silence from the clock (P0-1).</td></tr>
+<tr><th scope="row">Adaptive VAD and gain levelling</th><td class="mono">VAD_*, ASR_* constants in app.js</td><td>64 ms frames, speech threshold at 3× the noise floor, speech levelled to about −22 dBFS, long pieces split at the quietest point. Ported to pure Python (<code>math.sumprod</code>), so the core needs no numpy. Dictation cuts at 500 ms pauses into pieces of at most 10 s; meetings cut at 800 ms pauses into pieces of 22–28 s.</td></tr>
+<tr><th scope="row">Echo de-duplication</th><td class="mono">isEcho, dropEchoesOf</td><td>Drops the mic's copy of the other side when you use speakers instead of a headset.</td></tr>
+<tr><th scope="row">Hotkeys with fallbacks</th><td class="mono">tryRegister(), registerHotkeys()</td><td>Logs <code>[hotkey] … could not be registered</code> and tries the next combination. Keeps the pause-all toggle.</td></tr>
+<tr><th scope="row">Single instance, encrypted secrets</th><td class="mono">main.js, safeStorage (DPAPI)</td><td>Same behaviour, through Windows Credential Manager.</td></tr>
+<tr><th scope="row">Provider-agnostic LLM client</th><td class="mono">PROVIDERS, askOpenAICompat()</td><td>One OpenAI-compatible client for Groq, other APIs or the local llama-server. MWB keeps AI-App's provider list and its default (Groq, <code>openai/gpt-oss-120b</code>), so the same key works in both apps.</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">5.2</span>Leave behind</h3>
+<ul>
+  <li><b>The Electron shell.</b> A Chromium-based app needs 150 MB or more before it does any work; Wispr Flow shows where that ends up. MWB's always-on part is a small Python tray process, and windows open only when you ask for them.</li>
+  <li><b>The overlay features</b>: the always-on-top window excluded from screen capture, the custom pointer, OCR screen-ask and auto-answer. MWB is a visible assistant, and a meeting recorder has to show that it is recording.</li>
+  <li><b>Any borrowed identity in packaging.</b> MWB ships under its own name and icon. On a managed laptop, an audio-capturing process that presents itself as a different product is exactly what endpoint security flags.</li>
+</ul>
+</section>
+
+<section id="s6" class="sec">
+<h2><span class="n">6</span>Measured on this laptop</h2>
+<p class="lead">Published benchmarks do not tell you how a model behaves next to Brave, Teams and Defender on a four-core laptop. These numbers do.</p>
+<div class="box"><span class="lbl">Test conditions</span>
+<p>11 October 2026, late evening, normal background load: Brave, Edge, the Claude app and Wispr Flow running, 3.0 GB free at the start. Power source not controlled; the laptop was on battery for part of the session, so the timings are conservative. Input: a 62-second, 167-word stand-up update spoken by the Windows "Microsoft David" voice at 16 kHz mono. Engines: AI-App's own Parakeet environment (Python 3.14.7, onnxruntime 1.30.0, onnx-asr 0.12.0, int8) and its whisper.cpp v1.9.2 BLAS build with <code>ggml-base.en</code>. Short-clip times are the median of three runs; the 62-second figures are single runs. Synthetic speech is cleaner than a real meeting, so treat accuracy here as a best case.</p>
+</div>
+
+<h3><span class="n">6.1</span>Speed</h3>
+<figure class="fig">
+  <div class="fig-frame">{{fig:lat}}</div>
+  <figcaption><b>Figure 6.1</b>Time to transcribe a clip, Parakeet TDT 0.6B v2 int8. AI-App starts its sidecar with 2 threads. With 4 threads a 3-second phrase drops from 1.66 s to 0.66 s.</figcaption>
+</figure>
+
+<h3><span class="n">6.2</span>Memory</h3>
+<figure class="fig">
+  <div class="fig-frame">{{fig:mem}}</div>
+  <figcaption><b>Figure 6.2</b>Private memory of the speech process after each step, 4 threads. With the arena on (the onnxruntime default), one 62-second pass adds about 530 MB that is never returned. Cutting the same audio into 10-second pieces avoids it. With the arena off, memory stays flat.</figcaption>
+</figure>
+
+<h3><span class="n">6.3</span>Engine comparison</h3>
+<div class="tbl"><table>
+<thead><tr><th>Engine</th><th class="num">Threads</th><th class="num">Load</th><th class="num">5 s phrase</th><th>62 s file</th><th>Accuracy</th><th>Memory</th></tr></thead>
+<tbody>
+<tr><th scope="row">Parakeet 0.6B v2 int8</th><td class="num">2</td><td class="num">12.2 s</td><td class="num">1.98 s</td><td>14.1 s (4.4× real time)</td><td>no misheard words; "four" written as "4"</td><td>0.95 GB private after load</td></tr>
+<tr><th scope="row">Parakeet 0.6B v2 int8</th><td class="num">4</td><td class="num">7.5 s</td><td class="num">0.91 s</td><td>12.7 s (4.9×); 10.8 s in 10 s pieces (5.7×)</td><td>same</td><td>1.13 GB after dictation; 1.66 GB after one 62 s pass</td></tr>
+<tr><th scope="row">whisper.cpp base.en</th><td class="num">4</td><td class="num">0.66 s</td><td class="num">not run</td><td>21.8 s (2.8×)</td><td>"Priya" heard as "preya", dropped "me", "4" for "four" (1.8 % WER)</td><td>0.52 GB peak working set</td></tr>
+<tr><th scope="row">whisper.cpp small, multilingual <span class="small">12 Oct</span></th><td class="num">4</td><td class="num">0.56 s</td><td class="num">not run</td><td>23.9 s (2.6×)</td><td>"preya" for "Priya", an extra "Kapi", "4" for "four", dropped "that is all from" (4.2 % WER)</td><td>1.06 GB peak working set</td></tr>
+<tr><th scope="row">whisper.cpp large-v3-turbo q5_0 <span class="small">12 Oct</span></th><td class="num">4</td><td class="num">0.83 s</td><td class="num">not run</td><td>137.0 s (0.45×, slower than real time)</td><td>the only engine to get "Priya" right; "I also need to sync with" heard as "I asked", dropped "that is all from" (7.8 % WER, 4 points of it formatting)</td><td>1.27 GB peak working set</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">6.4</span>What the numbers decide</h3>
+<ol>
+  <li><b>Dictation uses 4 threads.</b> You are waiting for the text, and 4 threads cut a 3-second phrase from 1.66 s to 0.66 s.</li>
+  <li><b>Meetings use 2 threads at below-normal priority.</b> The call app, whichever it is, needs the CPU during a call. <i>Rev G:</i> meetings now use whisper small, not Parakeet (decision 5). On 2 threads it keeps up only on mains power (1.88× real time), so on battery the transcript is made after the call (§6.5).</li>
+  <li><b>Never send Parakeet more than about 10 seconds of audio at once.</b> Cutting the 62-second file into 10-second pieces was faster (10.8 s against 12.5 s) and used 530 MB less. whisper is the opposite: it always works on a 30-second window, so meeting pieces are 22–28 s (§6.5).</li>
+  <li><b>Background meeting work runs with the onnxruntime arena off.</b> Memory stays flat at 0.99 GB, at a cost of about 20 % more time. Dictation keeps the arena on for speed, and the process is recycled after 15 idle minutes.</li>
+  <li><b>Start loading the model when the hotkey goes down.</b> Loading takes 7.5 to 12 s and a typical phrase lasts 3 to 8 s, so most of the wait hides behind your speech.</li>
+  <li><b>Keep whisper.cpp for meetings, and Parakeet for dictation.</b> On English, Parakeet was 1.7× faster and made no recognition errors where whisper base.en made two, so dictation stays on Parakeet. The multilingual small model, measured on 12 October, is slower on English (2.6× real time, 4.2 % WER), but it understands Hindi and Hinglish, which your meetings use (decision 5, 13 October). So every meeting goes through whisper small, in the background. Large-v3-turbo, downloaded on 12 October, is slower than real time here (0.45×), so on this laptop it is only for overnight re-runs.</li>
+  <li><b>Keep numpy and onnxruntime out of the always-on process.</b> Python starts at 16 MB. Importing those two libraries costs about 250 MB before any model loads.</li>
+</ol>
+
+<h3><span class="n">6.5</span>Measured since Rev F</h3>
+<p>Phase 0 tests on 13–14 October and the Phase 1 to 3 builds on 14 October replaced several estimates. Every row is <span class="tag meas">measured</span> on this laptop; the raw results are in <code>docs/bench/P0-RESULTS-2026-10-12.md</code> and the status in <code>TODO.md</code>. Unless a row says otherwise, the speech in these tests was synthetic, so your own voice (P0-7) is still to come.</p>
+<div class="tbl dense"><table>
+<thead><tr><th>What</th><th>Result</th><th>What it changed</th></tr></thead>
+<tbody>
+<tr><th scope="row">whisper small on Hindi and Hinglish (P0-8), a 62 s clip</th><td>On battery: 67 s on 4 threads and 106 s on 2 (0.58–0.93× real time). On mains power: 33 s on 2 threads (1.88×).</td><td>Meetings are transcribed during the call only on mains power, and after the call on battery.</td></tr>
+<tr><th scope="row">whisper-server against whisper-cli, 14 Oct</th><td>The resident server held 2.2 GB. whisper-cli loads in about 0.5 s, peaks at 0.79 GB, and gives it all back when it exits. 28 s of speech took 19 s on 2 threads on battery.</td><td>Meetings start whisper-cli once per piece instead of keeping a server loaded.</td></tr>
+<tr><th scope="row">Meeting piece length</th><td>whisper always processes a 30 s window, so a 4 s piece costs as much as a 28 s one. In the end-to-end test, 12 short pieces became 4.</td><td>Pieces of 22–28 s, closed early only after 20 s of silence.</td></tr>
+<tr><th scope="row">Two-lane capture (P0-1)</th><td>Mic and loopback ran together for 60 s with no gaps or overflows, plus a 30 s self-test with an inaudible signal. The loopback sends nothing while nothing plays.</td><td>The recorder fills loopback gaps with silence from the clock. The 10-minute test during a real call is still to do.</td></tr>
+<tr><th scope="row">Double taps and push-to-talk (P0-2)</th><td>Caps Lock 50 of 50 and Alt 50 of 50 (at worst 50 of 51). The two taps were typically 80–130 ms apart, 195 ms at most. The 15 ms check ran every 17.1 ms on average. Caps Lock was never left changed.</td><td>No keyboard hook is needed. Ctrl+Alt+Space is taken by another app on this laptop, so push-to-talk uses its fallback Ctrl+Shift+Alt+Space. The paste waits for Shift too, or VS Code reads Ctrl+Shift+V.</td></tr>
+<tr><th scope="row">Classic Outlook through comtypes (P0-3)</th><td>No security pop-up, even for meeting bodies, sent-mail bodies and recipients. About 8 MB in the core. Date filters must use Windows' own (Indian) date format.</td><td><code>collectors/outlook.py</code> reads the calendar this way.</td></tr>
+<tr><th scope="row">Groq, the API half of P0-4</th><td><code>gpt-oss-120b</code> on low reasoning passed 42 of 42 checks and 5 of 5 coding tasks, with first words after 0.58 s and the whole answer in 0.86 s (medians). <code>gpt-oss-20b</code> passed 39 of 42, and the 120b on medium reasoning 40 of 42.</td><td>The 120b on low reasoning for everything, and the 20b only for labels and short jobs. Dates are worked out by code, look-alike hyphens are replaced, and the journal prompt spells out what it wants.</td></tr>
+<tr><th scope="row">Dictation in the built app (Phase 1)</th><td>Finish to text: 976 ms median over 20 phrases, on battery with the CPU busy. Word errors 1.5 % ("sync" heard as "sink").</td><td>Meets the 1.0 s target. The joined 10 s run waits for free memory.</td></tr>
+<tr><th scope="row">Loading the speech worker</th><td>17–40 s when memory was tight on 14 Oct, against 7.5 s on 11 Oct with more free.</td><td>MWB loads it at start only when 2 GB is free; otherwise the first dictation waits for it.</td></tr>
+<tr><th scope="row">Core memory at idle</th><td>25 MB private and 43 MB working set after Phase 1; 36 MB private and 59 MB working set after Phase 3, with the text-box check ready.</td><td>Just under the 60 MB target.</td></tr>
+<tr><th scope="row">A meeting end to end (Phase 2)</th><td>A 12-turn test conversation came out correct and in order, with no audio left on disk. Ready 355 s after the end, because only 0.4–0.8 GB was free and nothing could run during the call.</td><td>Memory, not speed, is the limit for meetings on this laptop.</td></tr>
+<tr><th scope="row">Notes and answers (Phase 3)</th><td>Notes for a 15-minute test meeting in 3.0 s through Groq. 10 of 10 questions about a made-up day answered with correct facts, 0.6–1.7 s each.</td><td>The network-off test waits for 1.25 GB of free memory.</td></tr>
+</tbody></table></div>
+</section>

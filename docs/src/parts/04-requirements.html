@@ -1,0 +1,108 @@
+
+<section id="s7" class="sec">
+<h2><span class="n">7</span>Requirements</h2>
+<p class="lead">Priorities use four levels. <span class="pri must">Must</span> is in the POC. <span class="pri should">Should</span> is in the POC if time allows. <span class="pri could">Could</span> is nice to have. <span class="pri later">Later</span> needs a stronger machine or a later version.</p>
+
+<h3><span class="n">7.1</span>Functional requirements</h3>
+<div class="tbl dense"><table>
+<thead><tr><th>ID</th><th>Requirement</th><th>Priority</th><th>How it is checked</th></tr></thead>
+<tbody>
+<tr class="grp"><th colspan="4">Dictation</th></tr>
+<tr><td class="mono nw">DIC-1</td><td>Start talking (double-tap Caps Lock, or hold Ctrl+Alt+Space, or Ctrl+Shift+Alt+Space where another app owns it), stop, and cleaned text is typed into whichever app has focus.</td><td><span class="pri must">Must</span></td><td>Works in Outlook, Teams, VS Code, Brave and Notepad.</td></tr>
+<tr><td class="mono nw">DIC-2</td><td>Long dictation: several minutes hands-free, transcribed piece by piece as you talk, with no words lost.</td><td><span class="pri should">Should</span></td><td>A 3-minute dictation arrives complete.</td></tr>
+<tr><td class="mono nw">DIC-3</td><td>Clean-up: filler words removed, spoken punctuation, personal dictionary for names and acronyms.</td><td><span class="pri must">Must</span></td><td>A 20-phrase test script passes.</td></tr>
+<tr><td class="mono nw">DIC-4</td><td>Per-app style: formal in Outlook, plain in Teams, off in code editors.</td><td><span class="pri should">Should</span></td><td>Same phrase gives the expected style in each app.</td></tr>
+<tr><td class="mono nw">DIC-5</td><td>Voice command on selected text ("make this shorter", "turn into bullets").</td><td><span class="pri should">Should</span></td><td>Five standard commands work on a paragraph.</td></tr>
+<tr><td class="mono nw">DIC-6</td><td>Snippets ("insert my sign-off").</td><td><span class="pri could">Could</span></td><td>Configured snippets expand.</td></tr>
+<tr><td class="mono nw">DIC-7</td><td>History of the last 500 dictations, searchable, with re-insert.</td><td><span class="pri should">Should</span></td><td>Search finds a phrase from yesterday.</td></tr>
+<tr><td class="mono nw">DIC-8</td><td>Double-tap Caps Lock starts hands-free talking; a second double tap or a 2-second pause finishes it. Caps Lock is left in the state it started in.</td><td><span class="pri must">Must</span></td><td>20 double taps in a row, with the Caps Lock light unchanged; no false starts in a day of normal typing.</td></tr>
+<tr class="grp"><th colspan="4">Meetings</th></tr>
+<tr><td class="mono nw">MTG-1</td><td>Detect when a call starts and ends in any video-call app, desktop or browser: Teams, Zoom, Google Meet, Webex, Slack, WhatsApp, Discord and any other app listed in <code>config/vc_apps.toml</code>.</td><td><span class="pri must">Must</span></td><td>95 % of a week's calls detected across every app you use; no false starts from dictation or voice notes.</td></tr>
+<tr><td class="mono nw">MTG-2</td><td>Record Me (mic) and Them (system audio) on separate lanes, with a visible indicator and a stop hotkey.</td><td><span class="pri must">Must</span></td><td>Tray turns orange and a notification appears within 5 s of recording.</td></tr>
+<tr><td class="mono nw">MTG-3</td><td>Transcribe locally while the call runs; transcript ready within 2 minutes of the end.</td><td><span class="pri must">Must</span></td><td>Measured on three real calls.</td></tr>
+<tr><td class="mono nw">MTG-4</td><td>Summary, decisions and action items, split into yours and others'.</td><td><span class="pri must">Must</span></td><td>You rate 8 of 10 summaries as usable without edits.</td></tr>
+<tr><td class="mono nw">MTG-5</td><td>Label each meeting Work or Timepass with a reason and confidence; one-click correction that teaches future runs.</td><td><span class="pri must">Must</span></td><td>80 % agreement on the first 20 meetings, 85 % after two weeks.</td></tr>
+<tr><td class="mono nw">MTG-6</td><td>Import the platform's own transcript (Teams, Zoom, Meet or Webex; .vtt, .docx or .txt, with .srt later) instead of recording.</td><td><span class="pri should">Should</span></td><td>An imported meeting gets the same notes and label.</td></tr>
+<tr><td class="mono nw">MTG-7</td><td>Separate speakers inside the Them lane (diarization).</td><td><span class="pri later">Later</span></td><td>Balanced profile and up.</td></tr>
+<tr><td class="mono nw">MTG-8</td><td>Live captions and "what did I miss" during a call.</td><td><span class="pri later">Later</span></td><td>Performance profile.</td></tr>
+<tr><td class="mono nw">MTG-9</td><td>Recording policy per app: record, ask or never. Personal apps such as WhatsApp and Discord always ask; an unknown app holding the mic asks each time until you choose "Never" for it.</td><td><span class="pri must">Must</span></td><td>A WhatsApp call prompts instead of recording.</td></tr>
+<tr class="grp"><th colspan="4">Email</th></tr>
+<tr><td class="mono nw">EML-1</td><td>Explain the selected email or the open Outlook item: short summary, what they ask of you, deadlines, tone.</td><td><span class="pri must">Must</span></td><td>Deadlines come out as real dates on ten sample emails.</td></tr>
+<tr><td class="mono nw">EML-2</td><td>Draft a reply from a spoken intent, in your style. Insert it or save it as an Outlook draft. Never send.</td><td><span class="pri must">Must</span></td><td>No code path calls <code>Send()</code>.</td></tr>
+<tr><td class="mono nw">EML-3</td><td>Learn your writing style from about 30 sent emails, on the local model at night, so those emails stay on the laptop.</td><td><span class="pri should">Should</span></td><td>You prefer styled drafts over unstyled ones in a blind check.</td></tr>
+<tr><td class="mono nw">EML-4</td><td>Daily list of sent mail (subjects and people only) for the journal.</td><td><span class="pri should">Should</span></td><td>Matches Sent Items for the day.</td></tr>
+<tr class="grp"><th colspan="4">Code</th></tr>
+<tr><td class="mono nw">COD-1</td><td>Explain selected code and propose an optimised version with reasons.</td><td><span class="pri must">Must</span></td><td>Works on Java, JavaScript and Python samples from your repos.</td></tr>
+<tr><td class="mono nw">COD-2</td><td>Generate code from a spoken description and paste it at the cursor.</td><td><span class="pri should">Should</span></td><td>Five small functions compile or run as described.</td></tr>
+<tr><td class="mono nw">COD-3</td><td>Review the staged git diff for bugs.</td><td><span class="pri could">Could</span></td><td>Finds a seeded bug in a test diff.</td></tr>
+<tr class="grp"><th colspan="4">Ask</th></tr>
+<tr><td class="mono nw">ASK-1</td><td>Answer mode: when the cursor is not in a text box, or you start with the wake word, a spoken question gets an answer, shown in the indicator's place, instead of being typed.</td><td><span class="pri must">Must</span></td><td>10 questions about your day answered from your own data, with real SHAs, times and names.</td></tr>
+<tr><td class="mono nw">ASK-2</td><td>General questions answered through the API, or by the local model when the API can't be reached or answers are set to local-only.</td><td><span class="pri should">Should</span></td><td>With no network, the local model still answers.</td></tr>
+<tr><td class="mono nw">ASK-3</td><td>Follow-up: another double tap within 30 s continues the same conversation.</td><td><span class="pri could">Could</span></td><td>"And who else was there?" resolves against the last answer.</td></tr>
+<tr class="grp"><th colspan="4">Journal</th></tr>
+<tr><td class="mono nw">JNL-1</td><td>Collect the day's commits: SHA, repo, branch, time, message, lines added and removed.</td><td><span class="pri must">Must</span></td><td>100 % match with <code>git log</code>.</td></tr>
+<tr><td class="mono nw">JNL-2</td><td>Collect meetings, dictation, email, voice notes and time per app and project.</td><td><span class="pri must">Must</span></td><td>Totals add up to the working day within 10 %.</td></tr>
+<tr><td class="mono nw">JNL-3</td><td>Write the end-of-day report on demand and at a set time. Facts come from code, prose from the model.</td><td><span class="pri must">Must</span></td><td>Every sentence cites an event; no invented SHA.</td></tr>
+<tr><td class="mono nw">JNL-4</td><td>Export as Markdown, copy, or save as an Outlook draft to your manager. Never send.</td><td><span class="pri should">Should</span></td><td>Draft appears in Outlook.</td></tr>
+<tr><td class="mono nw">JNL-5</td><td>Weekly roll-up.</td><td><span class="pri could">Could</span></td><td>Built from five daily journals.</td></tr>
+<tr><td class="mono nw">JNL-6</td><td>Voice note straight into today's journal.</td><td><span class="pri should">Should</span></td><td>Appears under Notes.</td></tr>
+<tr class="grp"><th colspan="4">Control</th></tr>
+<tr><td class="mono nw">CTL-1</td><td>Start from a shortcut key, pause and resume everything with one hotkey, quit from the tray or a hotkey.</td><td><span class="pri must">Must</span></td><td>All three work while other apps have focus.</td></tr>
+<tr><td class="mono nw">CTL-2</td><td>Tray icon shows the state: idle, listening, recording, working, paused, needs you.</td><td><span class="pri must">Must</span></td><td>Each state is visible within 1 s.</td></tr>
+<tr><td class="mono nw">CTL-3</td><td>Every hotkey configurable; conflicts logged; fallbacks tried.</td><td><span class="pri must">Must</span></td><td>Log names the conflicting combination.</td></tr>
+<tr><td class="mono nw">CTL-4</td><td>Settings, privacy controls and data retention in one place.</td><td><span class="pri should">Should</span></td><td>"Forget today" removes the day's data.</td></tr>
+<tr><td class="mono nw">CTL-5</td><td>You set the effort on each device. On first start a setup screen shows the detected hardware and a suggested level, and lets you choose: fixed or automatic within a range, battery behaviour, and a level per feature. The choice is stored for that machine and can be changed in Settings at any time.</td><td><span class="pri must">Must</span></td><td>On a second laptop the setup screen opens with that laptop's suggestion, and the choice made there does not change the first laptop.</td></tr>
+<tr><td class="mono nw">CTL-6</td><td>Every language-model skill uses the API by default, for now, and can be set to local-only. A local model, kept in sync through the same prompts and output checks, takes over when the API can't be reached.</td><td><span class="pri must">Must</span></td><td>With no network, every skill still works, more slowly, and the sync check passes for every skill.</td></tr>
+<tr class="grp"><th colspan="4">Indicator</th></tr>
+<tr><td class="mono nw">IND-1</td><td>A floating indicator like Wispr Flow's shows idle, listening, working, done, recording and paused. Clicks pass through it and it never takes the keyboard focus.</td><td><span class="pri must">Must</span></td><td>Pasted text still lands in the right app with the indicator showing.</td></tr>
+<tr><td class="mono nw">IND-2</td><td>Double-tap Alt shows or hides it; the gesture can be changed in Settings.</td><td><span class="pri must">Must</span></td><td>Works with any app in front; the choice survives a restart.</td></tr>
+<tr><td class="mono nw">IND-3</td><td>Eight built-in skins plus your own PNG skins; size, opacity and position configurable.</td><td><span class="pri should">Should</span></td><td>Switching skin applies at once, without a restart.</td></tr>
+</tbody></table></div>
+
+<h3><span class="n">7.2</span>Operating characteristics</h3>
+<p>Datasheet-style targets. The last column says where each typical value comes from: <span class="tag meas">measured</span> on this laptop, <span class="tag est">estimate</span> from published model sizes and arithmetic, or <span class="tag tgt">target</span> to be met by the build.</p>
+<div class="tbl dense"><table>
+<thead><tr><th>Parameter</th><th>Condition</th><th class="num">Typ</th><th class="num">Limit</th><th>Unit</th><th>Basis</th></tr></thead>
+<tbody>
+<tr><th scope="row">Core memory at idle</th><td>no model loaded, Phases 1 to 3 built; private memory (working set 59 MB)</td><td class="num">36</td><td class="num">≤ 60</td><td>MB</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Speech worker memory</th><td>Parakeet int8, warm, arena off</td><td class="num">0.99</td><td class="num">≤ 1.2</td><td>GB</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">MWB total, Lean profile</th><td>API route: core and speech worker</td><td class="num">1.2</td><td class="num">≤ 1.5</td><td>GB</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">MWB total, local fallback</th><td>worst case: Qwen3.5 4B writing the journal on its own</td><td class="num">2.5</td><td class="num">≤ 3.5</td><td>GB</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Dictation, finish to text</th><td>phrase ≤ 10 s, worker warm, 4 threads; engine alone</td><td class="num">0.7</td><td class="num">≤ 1.5 p95</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Dictation, finish to text, built app</th><td>20 synthetic phrases, on battery, CPU busy; clean-up and paste included</td><td class="num">0.98</td><td class="num">≤ 1.0 median</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Dictation, cold start</th><td>speech worker loads at key down; 7.5 s with memory free, up to 40 s when it is tight</td><td class="num">7.5–40</td><td class="num">≤ 9</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Double-tap detection</th><td>Caps Lock and Alt, normal typing</td><td class="num">—</td><td class="num">≥ 99</td><td>% of taps caught, ≤ 1 false start a day</td><td><span class="tag tgt">target</span></td></tr>
+<tr><th scope="row">Answer, first words</th><td>API, gpt-oss-120b on low reasoning, P0-4 median</td><td class="num">0.58</td><td class="num">≤ 2</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Answer about your day, complete</th><td>API, 10 questions on a made-up day, facts from the database</td><td class="num">0.6–1.7</td><td class="num">—</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Answer, first words, fallback</th><td>local Qwen3.5 2B, warm, short question</td><td class="num">1.2</td><td class="num">≤ 5</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Indicator CPU</th><td>idle / animating</td><td class="num">0 / 1</td><td class="num">≤ 2</td><td>% of total</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">Meeting transcription speed</th><td>whisper small, 2 threads, below-normal priority, on mains power</td><td class="num">1.88</td><td class="num">≥ 1</td><td>× real time</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Meeting transcription speed, battery</th><td>same, on battery: too slow to run live, so it runs after the call</td><td class="num">0.58–0.93</td><td class="num">—</td><td>× real time</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">CPU while recording</th><td>both lanes, 2 threads</td><td class="num">6</td><td class="num">≤ 15</td><td>% of total</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">Transcript ready</th><td>after the call ends, on mains power with about 1.1 GB free</td><td class="num">1</td><td class="num">≤ 2</td><td>min</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">Transcript ready, memory short</th><td>1-minute test call, 0.4–0.8 GB free, so nothing ran during the call</td><td class="num">5.9</td><td class="num">≤ 2</td><td>min</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Notes ready</th><td>60-minute call, through the API: six 10-minute parts and one combining step</td><td class="num">&lt; 1</td><td class="num">≤ 10</td><td>min</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">Notes ready, test meeting</th><td>15-minute test meeting, through Groq</td><td class="num">3.0</td><td class="num">—</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Journal ready</th><td>today's journal through Groq, git included, 16 Oct</td><td class="num">2.7–3.2</td><td class="num">≤ 300</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Git collector</th><td>35 repositories under the scan root, four at a time</td><td class="num">1.9</td><td class="num">—</td><td>s</td><td><span class="tag meas">measured</span></td></tr>
+<tr><th scope="row">Meeting detection</th><td>calls in every VC app you use, one week</td><td class="num">—</td><td class="num">≥ 95</td><td>% found</td><td><span class="tag tgt">target</span></td></tr>
+<tr><th scope="row">Re-tune on another laptop</th><td>first start, calibration included</td><td class="num">60</td><td class="num">≤ 120</td><td>s, before model downloads</td><td><span class="tag tgt">target</span></td></tr>
+<tr><th scope="row">Work or Timepass agreement</th><td>after two weeks of corrections</td><td class="num">—</td><td class="num">≥ 85</td><td>%</td><td><span class="tag tgt">target</span></td></tr>
+<tr><th scope="row">Word error rate, your voice</th><td>20 sentences you record, headset</td><td class="num">6</td><td class="num">≤ 10</td><td>%</td><td><span class="tag tgt">target</span></td></tr>
+<tr><th scope="row">Disk per hour of speech</th><td>temporary WAV pieces at the device's rate (48 kHz here), silences trimmed, deleted once transcribed</td><td class="num">~350</td><td class="num">—</td><td>MB</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">Database growth</th><td>transcripts and activity, pruned</td><td class="num">10</td><td class="num">≤ 30</td><td>MB / month</td><td><span class="tag est">estimate</span></td></tr>
+<tr><th scope="row">Network requests</th><td>to anything other than your API provider</td><td class="num">0</td><td class="num">0</td><td>per day</td><td><span class="tag tgt">target</span></td></tr>
+</tbody></table></div>
+
+<h3><span class="n">7.3</span>Hard limits</h3>
+<div class="box warn"><span class="lbl">Never</span>
+<ul>
+  <li>Never sends an email or a message. MWB writes drafts only.</li>
+  <li>Never uploads audio. The API receives text only, and never the text of a skill set to local-only.</li>
+  <li>Never records without the tray turning orange and a notification on screen.</li>
+  <li>Never logs keystrokes, takes screenshots or reads browser history.</li>
+  <li>Never loads two models at the same moment on the Lean profile. Two can stay resident together only when the memory guard finds room; otherwise the idle one exits first.</li>
+  <li>Never exceeds 3.5 GB in total on the Lean profile. The memory guard defers work instead.</li>
+</ul>
+</div>
+</section>

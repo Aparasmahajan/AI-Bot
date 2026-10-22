@@ -1,0 +1,1484 @@
+{
+ "runs": [
+  {
+   "at": "2026-10-13T11:39:15",
+   "network": {
+    "first_request_s": 0.328,
+    "kept_alive_median_s": 0.311,
+    "status": 200
+   },
+   "routes": [
+    "groq-120b",
+    "groq-120b-medium",
+    "groq-20b"
+   ],
+   "free_gb": 2.02
+  },
+  {
+   "at": "2026-10-13T11:40:41",
+   "network": {
+    "first_request_s": 0.431,
+    "kept_alive_median_s": 0.279,
+    "status": 200
+   },
+   "routes": [
+    "groq-120b",
+    "groq-120b-medium",
+    "groq-20b"
+   ],
+   "free_gb": 1.98
+  },
+  {
+   "at": "2026-10-16T13:22:24",
+   "network": {
+    "first_request_s": 0.529,
+    "kept_alive_median_s": 0.279,
+    "status": 200
+   },
+   "routes": [
+    "groq-120b",
+    "groq-120b-medium",
+    "groq-20b"
+   ],
+   "free_gb": 1.85
+  }
+ ],
+ "answers": [
+  {
+   "task": "code:merge_intervals",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    # Sort intervals by start time\n    intervals = sorted(intervals, key=lambda x: x[0])\n    merged = [intervals[0][:]]\n    for start, end in intervals[1:]:\n        last_start, last_end = merged[-1]\n        # Overlap or touching (i.e., start <= last_end)\n        if start <= last_end:\n            merged[-1][1] = max(last_end, end)\n        else:\n            merged.append([start, end])\n    return merged\n```",
+   "first_word_s": 0.49543979999725707,
+   "total_s": 0.76,
+   "completion_tokens": 140,
+   "reasoning_tokens": 6,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:is_balanced",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "```python\ndef is_balanced(s: str) -> bool:\n    stack = []\n    pairs = {')': '(', ']': '[', '}': '{'}\n    opening = set(pairs.values())\n    for ch in s:\n        if ch in opening:\n            stack.append(ch)\n        elif ch in pairs:\n            if not stack or stack.pop() != pairs[ch]:\n                return False\n    return not stack\n```",
+   "first_word_s": 0.420708999998169,
+   "total_s": 0.6,
+   "completion_tokens": 102,
+   "reasoning_tokens": 6,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:top_k_words",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "```python\nfrom collections import Counter\nfrom typing import List\n\ndef top_k_words(words: List[str], k: int) -> List[str]:\n    \"\"\"\n    Return the k most frequent strings in `words`, sorted by descending frequency.\n    Ties are broken by alphabetical order.\n    \"\"\"\n    # Count frequencies\n    freq = Counter(words)\n    # Sort items: first by descending frequency, then alphabetically\n    sorted_items = sorted(freq.items(), key=lambda item: (-item[1], item[0]))\n    # Extract the words for the top k entries\n    return [word for word, _ in sorted_items[:k]]\n```",
+   "first_word_s": 0.4791104999894742,
+   "total_s": 0.75,
+   "completion_tokens": 146,
+   "reasoning_tokens": 6,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:parse_duration",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "```python\nimport re\n\ndef parse_duration(text: str) -> int:\n    \"\"\"\n    Convert a duration string like \"1h30m\", \"45s\", \"2h5s\" or \"10m20s\"\n    into total seconds.\n\n    Hours (h), minutes (m) and seconds (s) are optional but must appear\n    in that order if present.\n    \"\"\"\n    pattern = r'(?:(?P<h>\\d+)h)?(?:(?P<m>\\d+)m)?(?:(?P<s>\\d+)s)?$'\n    match = re.fullmatch(pattern, text.strip())\n    if not match:\n        raise ValueError(f\"Invalid duration format: {text!r}\")\n\n    hours = int(match.group('h')) if match.group('h') else 0\n    minutes = int(match.group('m')) if match.group('m') else 0\n    seconds = int(match.group('s')) if match.group('s') else 0\n\n    return hours * 3600 + minutes * 60 + seconds\n```",
+   "first_word_s": 0.4756653999793343,
+   "total_s": 0.94,
+   "completion_tokens": 237,
+   "reasoning_tokens": 6,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:chunk_by_size",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "```python\ndef chunk_by_size(items, max_total):\n    \"\"\"\n    Split a list of positive integers into consecutive chunks where the sum of each chunk\n    does not exceed max_total. A single item larger than max_total is placed in its own chunk.\n    \n    Parameters:\n        items (list[int]): List of positive integers.\n        max_total (int): Maximum allowed sum per chunk.\n    \n    Returns:\n        list[list[int]]: List of chunks (each a list of ints).\n    \"\"\"\n    if max_total <= 0:\n        raise ValueError(\"max_total must be a positive integer\")\n    \n    chunks = []\n    current_chunk = []\n    current_sum = 0\n\n    for item in items:\n        if item > max_total:\n            # Flush current chunk if not empty\n            if current_chunk:\n                chunks.append(current_chunk)\n                current_chunk = []\n                current_sum = 0\n            # Item itself forms a chunk\n            chunks.append([item])\n            continue\n\n        # If adding the item exceeds the limit, start a new chunk\n        if current_sum + item > max_total:\n            if current_chunk:\n                chunks.append(current_chunk)\n            current_chunk = [item]\n            current_sum = item\n        else:\n            current_chunk.append(item)\n            current_sum += item\n\n    # Append any remaining items\n    if current_chunk:\n        chunks.append(current_chunk)\n\n    return chunks\n```",
+   "first_word_s": 0.48093320001498796,
+   "total_s": 1.09,
+   "completion_tokens": 305,
+   "reasoning_tokens": 8,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:merge_intervals",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n    # Sort by start time\n    intervals.sort(key=lambda x: x[0])\n    merged = [intervals[0]]\n    for current in intervals[1:]:\n        last = merged[-1]\n        # If current starts before or at the end of last, merge\n        if current[0] <= last[1]:\n            merged[-1] = [last[0], max(last[1], current[1])]\n        else:\n            merged.append(current)\n    return merged\n```",
+   "first_word_s": 0.5023366999812424,
+   "total_s": 0.67,
+   "completion_tokens": 141,
+   "reasoning_tokens": 12,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:is_balanced",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "```python\ndef is_balanced(s):\n    stack = []\n    pairs = {')': '(', ']': '[', '}': '{'}\n    for ch in s:\n        if ch in '([{':\n            stack.append(ch)\n        elif ch in ')]}':\n            if not stack or stack[-1] != pairs[ch]:\n                return False\n            stack.pop()\n    return not stack\n```",
+   "first_word_s": 0.37618490000022575,
+   "total_s": 0.46,
+   "completion_tokens": 96,
+   "reasoning_tokens": 5,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:top_k_words",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "```python\nfrom collections import Counter\n\ndef top_k_words(words, k):\n    freq = Counter(words)\n    sorted_words = sorted(freq.items(), key=lambda x: (-x[1], x[0]))\n    return [word for word, _ in sorted_words[:k]]\n```",
+   "first_word_s": 0.4364950000017416,
+   "total_s": 0.5,
+   "completion_tokens": 97,
+   "reasoning_tokens": 30,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:parse_duration",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "```python\nimport re\n\ndef parse_duration(text: str) -> int:\n    \"\"\"\n    Convert a duration string like \"1h30m\", \"45s\", \"2h5s\" or \"10m20s\"\n    into the total number of seconds as an int.\n    Hours (h), minutes (m) and seconds (s) are optional but appear in that order.\n    \"\"\"\n    pattern = re.compile(r'^\\s*(?:(?P<hours>\\d+)h)?(?:(?P<minutes>\\d+)m)?(?:(?P<seconds>\\d+)s)?\\s*$')\n    match = pattern.match(text)\n    if not match:\n        raise ValueError(f\"Invalid duration format: {text!r}\")\n\n    hours = int(match.group('hours') or 0)\n    minutes = int(match.group('minutes') or 0)\n    seconds = int(match.group('seconds') or 0)\n\n    return hours * 3600 + minutes * 60 + seconds\n```",
+   "first_word_s": 0.4412505999789573,
+   "total_s": 0.69,
+   "completion_tokens": 228,
+   "reasoning_tokens": 8,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "code:chunk_by_size",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "```python\ndef chunk_by_size(items, max_total):\n    \"\"\"\n    Split a list of positive integers into consecutive chunks such that\n    the sum of each chunk does not exceed max_total. If an individual\n    item is larger than max_total, it forms a chunk by itself.\n    \"\"\"\n    if max_total <= 0:\n        raise ValueError(\"max_total must be positive\")\n\n    chunks = []\n    current_chunk = []\n    current_sum = 0\n\n    for item in items:\n        if item <= 0:\n            raise ValueError(\"items must be positive integers\")\n\n        # If the item alone exceeds max_total, flush current chunk and\n        # start a new chunk containing only this item.\n        if item > max_total:\n            if current_chunk:\n                chunks.append(current_chunk)\n                current_chunk = []\n                current_sum = 0\n            chunks.append([item])\n            continue\n\n        # If adding the item would exceed max_total, start a new chunk.\n        if current_sum + item > max_total:\n            if current_chunk:\n                chunks.append(current_chunk)\n            current_chunk = [item]\n            current_sum = item\n        else:\n            current_chunk.append(item)\n            current_sum += item\n\n    if current_chunk:\n        chunks.append(current_chunk)\n\n    return chunks\n```",
+   "first_word_s": 0.5869621000019833,
+   "total_s": 0.9,
+   "completion_tokens": 278,
+   "reasoning_tokens": 4,
+   "checks": [
+    [
+     "hidden tests pass",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1
+  },
+  {
+   "task": "meeting_en",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "## Summary\n- Arjun identified the login timeout bug (PAY‑412) and has a fix ready locally.\n- Me will review Arjun’s PR and is preparing the UAT build to share with Sanjay’s team by Wednesday.\n- Meera is blocked on Kafka consumer work due to lack of access to the staging Kafka cluster.\n- Dark mode work is postponed to the next sprint.\n\n## Decisions\n- The login timeout fix PR will be raised today and merged by Wednesday.  \n- Dark mode will be moved to the next sprint.  \n- Release candidate remains scheduled for Thursday.  \n- Next sync meeting set for Friday at 11:00.\n\n## Action items\n- **Arjun** raise the PR for the login timeout fix (due: today).  \n- **Arjun** ensure the PR is merged by Wednesday (due: Wednesday).  \n- **Me** review Arjun’s PR as soon as it’s up (due: no date).  \n- **Me** share the UAT build with Sanjay’s team (due: Wednesday).  \n- **Priya** escalate Meera’s Kafka access request with DevOps (due: today).  \n- **Meera** start Kafka consumer work once access is granted (due: within two days of access).  ",
+   "first_word_s": 0.4902722999686375,
+   "total_s": 1.08,
+   "prompt_tokens": 454,
+   "completion_tokens": 312,
+   "reasoning_tokens": 44,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.30970673,
+    "prompt_time": 0.020791605,
+    "completion_time": 0.648417302,
+    "total_time": 0.669208907
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "ticket PAY-412 kept",
+     true
+    ],
+    [
+     "dark mode moved to next sprint, under Decisions",
+     true
+    ],
+    [
+     "owners Arjun, Priya and Me in action items",
+     true
+    ],
+    [
+     "dates Wednesday, Thursday, Friday",
+     true
+    ],
+    [
+     "Kafka access blocker",
+     true
+    ]
+   ],
+   "passed": 6,
+   "of": 6,
+   "needed_cleanup": true
+  },
+  {
+   "task": "meeting_hinglish",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "## Summary\n- Discussed staging deployment schedule and payment gateway timeout issue.  \n- Agreed on fixing the payment gateway retry logic by Thursday.  \n- Planned staging deployment for Friday, with a database migration script review due tomorrow.  \n- Confirmed client demo on Monday and set next sync for Wednesday at 4 pm.\n\n## Decisions\n- Payment gateway retry logic will be fixed by Thursday.  \n- Staging deployment will occur on Friday; the deadline must not be missed.  \n- Logging library upgrade will be postponed until after the demo.  \n- Next sync meeting scheduled for Wednesday at 4 pm.\n\n## Action items\n- **Neha** fix payment gateway retry logic (due: Thursday).  \n- **Me** review database migration script (due: tomorrow).  \n- **Me** ensure staging deployment is completed on Friday.  \n- **Neha** send new QA test cases to the QA team (due: today evening).  \n- **Rohit** coordinate client demo on Monday (no date).  \n- **Rohit** schedule next sync meeting for Wednesday 4 pm (no date).",
+   "first_word_s": 0.534886000037659,
+   "total_s": 1.23,
+   "prompt_tokens": 411,
+   "completion_tokens": 288,
+   "reasoning_tokens": 51,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.337414777,
+    "prompt_time": 0.017079268,
+    "completion_time": 0.608275875,
+    "total_time": 0.625355143
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "written in English",
+     true
+    ],
+    [
+     "Neha owns the timeout fix by Thursday",
+     true
+    ],
+    [
+     "Me reviews the migration script",
+     true
+    ],
+    [
+     "Friday deployment and Monday demo",
+     true
+    ],
+    [
+     "test cases to QA",
+     true
+    ],
+    [
+     "logging upgrade postponed",
+     true
+    ]
+   ],
+   "passed": 7,
+   "of": 7,
+   "needed_cleanup": true
+  },
+  {
+   "task": "label_work",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "{\n  \"label\": \"work\",\n  \"confidence\": 0.98,\n  \"reasons\": [\n    \"Sprint planning meeting for software development\",\n    \"Discussion of backlog, story points, and technical tasks\",\n    \"Organised by a team member with multiple invitees\"\n  ]\n}",
+   "first_word_s": 0.39532740000868216,
+   "total_s": 0.53,
+   "prompt_tokens": 268,
+   "completion_tokens": 93,
+   "reasoning_tokens": 23,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.217072912,
+    "prompt_time": 0.064917784,
+    "completion_time": 0.196260545,
+    "total_time": 0.261178329
+   },
+   "checks": [
+    [
+     "valid JSON, label work, confidence 0-1, 1-3 reasons",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1,
+   "needed_cleanup": false
+  },
+  {
+   "task": "label_timepass",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "{\n  \"label\": \"timepass\",\n  \"confidence\": 0.9,\n  \"reasons\": [\n    \"Conversation is about personal topics (cricket match, movie plans)\",\n    \"No calendar entry indicating work-related meeting\",\n    \"Occurs on WhatsApp, a typical personal chat platform\"\n  ]\n}",
+   "first_word_s": 0.543804100016132,
+   "total_s": 0.9,
+   "prompt_tokens": 252,
+   "completion_tokens": 112,
+   "reasoning_tokens": 38,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.387296434,
+    "prompt_time": 0.010762701,
+    "completion_time": 0.241925363,
+    "total_time": 0.252688064
+   },
+   "checks": [
+    [
+     "valid JSON, label timepass, confidence 0-1, 1-3 reasons",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1,
+   "needed_cleanup": false
+  },
+  {
+   "task": "email_explain",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "{\n  \"summary\": \"Vikram requests API docs, load test report, and rate‑limit clarification before next Tuesday's review.\",\n  \"they_want\": [\n    \"API documentation\",\n    \"latest load test report (draft acceptable)\",\n    \"confirmation of whether rate limit is per user or per tenant\"\n  ],\n  \"deadlines\": [\n    {\n      \"what\": \"Provide draft or final load test report\",\n      \"date\": \"2026-10-15\"\n    }\n  ],\n  \"people\": [\n    \"Vikram Rao\",\n    \"Priya\",\n    \"Me\"\n  ],\n  \"reply_options\": [\n    \"Send the API docs and a draft load test report by Friday, and confirm the rate‑limit scope.\",\n    \"Ask if a specific format or additional details are needed for the docs or report before sending.\"\n  ]\n}",
+   "first_word_s": 0.5573950000107288,
+   "total_s": 0.93,
+   "prompt_tokens": 299,
+   "completion_tokens": 253,
+   "reasoning_tokens": 66,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.336839927,
+    "prompt_time": 0.014998068,
+    "completion_time": 0.52794241,
+    "total_time": 0.542940478
+   },
+   "checks": [
+    [
+     "valid JSON with the five fields",
+     true
+    ],
+    [
+     "Friday is 2026-10-16",
+     false
+    ],
+    [
+     "asks: docs, load test report, rate limit",
+     true
+    ],
+    [
+     "Vikram among the people",
+     true
+    ]
+   ],
+   "passed": 3,
+   "of": 4,
+   "needed_cleanup": true
+  },
+  {
+   "task": "email_draft",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "Hi Sanjay,\n\nI’ll share the UAT build by Wednesday. I’m still waiting for Kafka access from DevOps; without it the integration is blocked.\n\nThanks,",
+   "first_word_s": 0.3070556999882683,
+   "total_s": 0.39,
+   "prompt_tokens": 247,
+   "completion_tokens": 51,
+   "reasoning_tokens": 8,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.213166201,
+    "prompt_time": 0.010639706,
+    "completion_time": 0.108941815,
+    "total_time": 0.119581521
+   },
+   "checks": [
+    [
+     "greets Sanjay",
+     true
+    ],
+    [
+     "build by Wednesday",
+     true
+    ],
+    [
+     "Kafka access from DevOps, integration blocked",
+     true
+    ],
+    [
+     "signs off \"Thanks,\"",
+     true
+    ],
+    [
+     "under 120 words",
+     true
+    ],
+    [
+     "doesn't claim the integration is done",
+     true
+    ]
+   ],
+   "passed": 6,
+   "of": 6,
+   "needed_cleanup": false
+  },
+  {
+   "task": "code_explain",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "## What it does\nThe `add_tag` function appends a given tag to a list (defaulting to an empty list) and returns the list.  \nThe `average` function attempts to compute the arithmetic mean of a list of numbers.\n\n## Problems\n- `add_tag` uses a mutable default argument (`tags=[]`), causing the same list to be shared across calls.  \n- `average` starts the loop at index 1, so it skips the first element of `nums`.  \n- `average` does not handle an empty list, which would raise a division‑by‑zero error.  \n\n## Better version\n```python\ndef add_tag(tag, tags=None):\n    \"\"\"Append `tag` to a list and return the list without sharing state.\"\"\"\n    if tags is None:\n        tags = []\n    tags.append(tag)\n    return tags\n\n\ndef average(nums):\n    \"\"\"Return the arithmetic mean of `nums`. Returns None for an empty list.\"\"\"\n    if not nums:\n        return None\n    total = sum(nums)\n    return total / len(nums)\n```",
+   "first_word_s": 0.4551007999689318,
+   "total_s": 0.92,
+   "prompt_tokens": 214,
+   "completion_tokens": 260,
+   "reasoning_tokens": 31,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.310497515,
+    "prompt_time": 0.01247837,
+    "completion_time": 0.548895124,
+    "total_time": 0.561373494
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "finds the shared mutable default",
+     true
+    ],
+    [
+     "finds that the first number is skipped",
+     true
+    ],
+    [
+     "finds the empty-list division",
+     true
+    ],
+    [
+     "its better version passes tests",
+     true
+    ]
+   ],
+   "passed": 5,
+   "of": 5,
+   "needed_cleanup": true
+  },
+  {
+   "task": "dictation_cleanup",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "Basically, I wanted to tell you that the deployment is moved to Friday because the QA team found two issues in the payment flow, and we need to fix them first. Please don't share the build with the client before that.",
+   "first_word_s": 0.30210720002651215,
+   "total_s": 0.4,
+   "prompt_tokens": 217,
+   "completion_tokens": 63,
+   "reasoning_tokens": 9,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.213484061,
+    "prompt_time": 0.009257786,
+    "completion_time": 0.131807924,
+    "total_time": 0.14106571
+   },
+   "checks": [
+    [
+     "fillers and repeats gone",
+     true
+    ],
+    [
+     "facts kept",
+     true
+    ],
+    [
+     "no preamble",
+     true
+    ],
+    [
+     "25 to 50 words",
+     true
+    ]
+   ],
+   "passed": 4,
+   "of": 4,
+   "needed_cleanup": false
+  },
+  {
+   "task": "journal",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "I made a commit 3f9c2a1 in AI‑Bot adding an API key window and Credential Manager storage. [E1]  \nLater I committed b7d41e0 in the same repository for the P0‑1 two‑lane capture check. [E2]  \nI had a Teams call labeled Work where we decided to move dark mode to the next sprint. [E3]  \nI emailed Vikram Rao the API docs and load test report, made one time‑pass call, and did a dictation of six entries totaling 412 words. [E4, E5, E6]",
+   "first_word_s": 0.9751858000527136,
+   "total_s": 1.25,
+   "prompt_tokens": 382,
+   "completion_tokens": 366,
+   "reasoning_tokens": 228,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.395149593,
+    "prompt_time": 0.039938351,
+    "completion_time": 0.767878266,
+    "total_time": 0.807816617
+   },
+   "checks": [
+    [
+     "every sentence cites events",
+     true
+    ],
+    [
+     "3 to 6 sentences",
+     true
+    ],
+    [
+     "both commit IDs exact",
+     true
+    ],
+    [
+     "no invented commit IDs",
+     true
+    ],
+    [
+     "no timepass details",
+     true
+    ]
+   ],
+   "passed": 5,
+   "of": 5,
+   "needed_cleanup": true
+  },
+  {
+   "task": "answer",
+   "route": "groq-120b",
+   "ok": true,
+   "error": "",
+   "text": "A process is an independent execution unit that has its own memory space, resources, and at least one thread, while a thread is a lightweight execution path that runs within a process and shares that process’s memory and resources. Consequently, multiple threads can operate concurrently inside the same process, whereas separate processes run in isolation from each other.",
+   "first_word_s": 0.30074559996137396,
+   "total_s": 0.44,
+   "prompt_tokens": 141,
+   "completion_tokens": 83,
+   "reasoning_tokens": 8,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.213747987,
+    "prompt_time": 0.00552658,
+    "completion_time": 0.173505974,
+    "total_time": 0.179032554
+   },
+   "checks": [
+    [
+     "at most 3 sentences",
+     true
+    ],
+    [
+     "mentions memory",
+     true
+    ],
+    [
+     "under 80 words",
+     true
+    ]
+   ],
+   "passed": 3,
+   "of": 3,
+   "needed_cleanup": false
+  },
+  {
+   "task": "meeting_en",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "## Summary\n- Arjun will merge the login timeout fix (PAY‑412) by Wednesday.\n- Me will review the PR and share the UAT build with Sanjay’s team by Wednesday.\n- Meera’s Kafka consumer work is blocked due to lack of staging cluster access; Priya will raise the issue with DevOps.\n- Dark mode feature is postponed to the next sprint; release candidate remains scheduled for Thursday.\n\n## Decisions\n- Dark mode will be moved to the next sprint.\n- Release candidate remains planned for Thursday.\n\n## Action items\n- [Arjun] Merge login timeout PR (due: Wednesday)\n- [Me] Review Arjun’s PR and share UAT build with Sanjay’s team (due: Wednesday)\n- [Priya] Escalate Kafka access issue with DevOps (no date)\n- [Meera] Begin Kafka consumer work once access is granted (no date)",
+   "first_word_s": 0.4572984999977052,
+   "total_s": 0.66,
+   "prompt_tokens": 454,
+   "completion_tokens": 199,
+   "reasoning_tokens": 6,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.329672762,
+    "prompt_time": 0.022587783,
+    "completion_time": 0.221589519,
+    "total_time": 0.244177302
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "ticket PAY-412 kept",
+     true
+    ],
+    [
+     "dark mode moved to next sprint, under Decisions",
+     true
+    ],
+    [
+     "owners Arjun, Priya and Me in action items",
+     true
+    ],
+    [
+     "dates Wednesday, Thursday, Friday",
+     false
+    ],
+    [
+     "Kafka access blocker",
+     true
+    ]
+   ],
+   "passed": 5,
+   "of": 6,
+   "needed_cleanup": true
+  },
+  {
+   "task": "meeting_hinglish",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "## Summary\n- Staging deployment scheduled for Friday; database migration script review due tomorrow.\n- Payment gateway timeout issue identified; retry logic is causing new token creation on each retry.\n- QA team needs new test cases; Neha will send them by tonight.\n- Logging library upgrade postponed until after the client demo on Monday.\n\n## Decisions\n- Staging deployment will occur on Friday.\n- Payment gateway retry logic will be fixed by Thursday.\n- New QA test cases will be delivered by tonight.\n- Logging library upgrade will be deferred until after the client demo.\n\n## Action items\n- [Me] Review database migration script (due: tomorrow)\n- [Neha] Fix payment gateway retry logic (due: Thursday)\n- [Neha] Send new QA test cases (due: tonight)\n- [Rohit] Prepare for client demo on Monday (no date)",
+   "first_word_s": 0.39267180004389957,
+   "total_s": 0.57,
+   "prompt_tokens": 411,
+   "completion_tokens": 188,
+   "reasoning_tokens": 4,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.307080281,
+    "prompt_time": 0.021394385,
+    "completion_time": 0.193999219,
+    "total_time": 0.215393604
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "written in English",
+     true
+    ],
+    [
+     "Neha owns the timeout fix by Thursday",
+     true
+    ],
+    [
+     "Me reviews the migration script",
+     true
+    ],
+    [
+     "Friday deployment and Monday demo",
+     true
+    ],
+    [
+     "test cases to QA",
+     true
+    ],
+    [
+     "logging upgrade postponed",
+     true
+    ]
+   ],
+   "passed": 7,
+   "of": 7,
+   "needed_cleanup": false
+  },
+  {
+   "task": "label_work",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "{\"label\":\"work\",\"confidence\":0.99,\"reasons\":[\"Sprint planning meeting\",\"Team discussion on backlog\",\"Work-related agenda\"]}",
+   "first_word_s": 0.4976896000443958,
+   "total_s": 0.53,
+   "prompt_tokens": 268,
+   "completion_tokens": 73,
+   "reasoning_tokens": 36,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.384677503,
+    "prompt_time": 0.017422991,
+    "completion_time": 0.082590691,
+    "total_time": 0.100013682
+   },
+   "checks": [
+    [
+     "valid JSON, label work, confidence 0-1, 1-3 reasons",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1,
+   "needed_cleanup": false
+  },
+  {
+   "task": "label_timepass",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "{\"label\":\"timepass\",\"confidence\":0.95,\"reasons\":[\"Casual conversation about sports and movie plans\",\"No work-related topics mentioned\",\"Participants discuss personal leisure activities\"]}",
+   "first_word_s": 0.45163540000794455,
+   "total_s": 0.51,
+   "prompt_tokens": 252,
+   "completion_tokens": 75,
+   "reasoning_tokens": 29,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.332832321,
+    "prompt_time": 0.025431864,
+    "completion_time": 0.10215371,
+    "total_time": 0.127585574
+   },
+   "checks": [
+    [
+     "valid JSON, label timepass, confidence 0-1, 1-3 reasons",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1,
+   "needed_cleanup": false
+  },
+  {
+   "task": "email_explain",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "{\"summary\":\"Send API docs and load test report by Friday. Confirm rate‑limit scope.\",\"they_want\":[\"API documentation\",\"latest load test report\",\"clarification on whether rate limit is per user or per tenant\"],\"deadlines\":[{\"what\":\"load test report (draft acceptable)\",\"date\":\"2026-10-14\"}],\"people\":[\"Vikram Rao\",\"Priya\"],\"reply_options\":[\"Send the requested documents and confirm the rate‑limit scope\",\"Ask for clarification on any missing details\"]}",
+   "first_word_s": 0.5293795000179671,
+   "total_s": 0.64,
+   "prompt_tokens": 299,
+   "completion_tokens": 183,
+   "reasoning_tokens": 70,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.382479624,
+    "prompt_time": 0.015879861,
+    "completion_time": 0.188143699,
+    "total_time": 0.20402356
+   },
+   "checks": [
+    [
+     "valid JSON with the five fields",
+     true
+    ],
+    [
+     "Friday is 2026-10-16",
+     false
+    ],
+    [
+     "asks: docs, load test report, rate limit",
+     true
+    ],
+    [
+     "Vikram among the people",
+     true
+    ]
+   ],
+   "passed": 3,
+   "of": 4,
+   "needed_cleanup": true
+  },
+  {
+   "task": "email_draft",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "Hi Sanjay,\n\nI’ll share the UAT build by Wednesday.  \nI still need Kafka access from DevOps; without it the integration is blocked.\n\nThanks,",
+   "first_word_s": 0.42049469996709377,
+   "total_s": 0.44,
+   "prompt_tokens": 247,
+   "completion_tokens": 46,
+   "reasoning_tokens": 4,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.331863093,
+    "prompt_time": 0.013966373,
+    "completion_time": 0.047575396,
+    "total_time": 0.061541769
+   },
+   "checks": [
+    [
+     "greets Sanjay",
+     true
+    ],
+    [
+     "build by Wednesday",
+     true
+    ],
+    [
+     "Kafka access from DevOps, integration blocked",
+     true
+    ],
+    [
+     "signs off \"Thanks,\"",
+     true
+    ],
+    [
+     "under 120 words",
+     true
+    ],
+    [
+     "doesn't claim the integration is done",
+     true
+    ]
+   ],
+   "passed": 6,
+   "of": 6,
+   "needed_cleanup": false
+  },
+  {
+   "task": "code_explain",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "## What it does\nThe `add_tag` function adds a given `tag` to a list of `tags` and returns the updated list.  \nThe `average` function calculates the average of a list of numbers, but it skips the first element when summing.\n\n## Problems\n- `tags=[]` uses a mutable default argument, causing tags to persist across calls.  \n- `average` starts the loop at index 1, so the first number is ignored in the sum.  \n- `average` divides by the full length of the list, which can produce an incorrect result when the first element is omitted.  \n- No input validation is performed (e.g., empty list division by zero).\n\n## Better version\n```python\ndef add_tag(tag, tags=None):\n    if tags is None:\n        tags = []\n    tags.append(tag)\n    return tags\n\ndef average(nums):\n    if not nums:\n        raise ValueError(\"Cannot compute average of an empty list\")\n    total = sum(nums)\n    return total / len(nums)\n```\n",
+   "first_word_s": 0.38682360004168004,
+   "total_s": 0.61,
+   "prompt_tokens": 214,
+   "completion_tokens": 232,
+   "reasoning_tokens": 9,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.306107421,
+    "prompt_time": 0.012660565,
+    "completion_time": 0.235496251,
+    "total_time": 0.248156816
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "finds the shared mutable default",
+     true
+    ],
+    [
+     "finds that the first number is skipped",
+     true
+    ],
+    [
+     "finds the empty-list division",
+     true
+    ],
+    [
+     "its better version passes tests",
+     true
+    ]
+   ],
+   "passed": 5,
+   "of": 5,
+   "needed_cleanup": true
+  },
+  {
+   "task": "dictation_cleanup",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "I wanted to tell you that the deployment has been moved to Friday because the QA team found two issues in the payment flow and we need to fix them first. Please do not share the build with the client before that.",
+   "first_word_s": 0.4536693000118248,
+   "total_s": 0.5,
+   "prompt_tokens": 217,
+   "completion_tokens": 58,
+   "reasoning_tokens": 5,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.382976904,
+    "prompt_time": 0.010851912,
+    "completion_time": 0.060218864,
+    "total_time": 0.071070776
+   },
+   "checks": [
+    [
+     "fillers and repeats gone",
+     true
+    ],
+    [
+     "facts kept",
+     true
+    ],
+    [
+     "no preamble",
+     true
+    ],
+    [
+     "25 to 50 words",
+     true
+    ]
+   ],
+   "passed": 4,
+   "of": 4,
+   "needed_cleanup": false
+  },
+  {
+   "task": "journal",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "I started the day by committing changes to the AI‑Bot repository, adding an API key window and storing credentials in the Credential Manager [E1]. Later I pushed another commit that added a two‑lane capture check for P0‑1 [E2]. I had a 16‑minute Teams call where we decided to move dark mode to the next sprint [E3]. After that, I sent an email to Vikram Rao with the API docs and load test report, had a single Timepass call, and finished the day with six dictation sessions totaling 412 words [E4, E5, E6].",
+   "first_word_s": 0.4773365000146441,
+   "total_s": 0.61,
+   "prompt_tokens": 382,
+   "completion_tokens": 189,
+   "reasoning_tokens": 54,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.332779037,
+    "prompt_time": 0.019000198,
+    "completion_time": 0.209036432,
+    "total_time": 0.22803663
+   },
+   "checks": [
+    [
+     "every sentence cites events",
+     true
+    ],
+    [
+     "3 to 6 sentences",
+     true
+    ],
+    [
+     "both commit IDs exact",
+     false
+    ],
+    [
+     "no invented commit IDs",
+     true
+    ],
+    [
+     "no timepass details",
+     true
+    ]
+   ],
+   "passed": 4,
+   "of": 5,
+   "needed_cleanup": true
+  },
+  {
+   "task": "answer",
+   "route": "groq-20b",
+   "ok": true,
+   "error": "",
+   "text": "A process is an independent program instance that owns its own memory space and system resources, while a thread is a smaller unit of execution that runs within a process and shares the process’s memory and resources. Threads can communicate more easily with each other because they share the same address space, but a crash in one thread can bring down the entire process.",
+   "first_word_s": 0.40431990002980456,
+   "total_s": 0.48,
+   "prompt_tokens": 141,
+   "completion_tokens": 85,
+   "reasoning_tokens": 7,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.30581903,
+    "prompt_time": 0.006725366,
+    "completion_time": 0.086157071,
+    "total_time": 0.092882437
+   },
+   "checks": [
+    [
+     "at most 3 sentences",
+     true
+    ],
+    [
+     "mentions memory",
+     true
+    ],
+    [
+     "under 80 words",
+     true
+    ]
+   ],
+   "passed": 3,
+   "of": 3,
+   "needed_cleanup": false
+  },
+  {
+   "task": "meeting_en",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "## Summary\n- The login timeout bug (PAY‑412) has been identified; a fix is ready locally and a PR will be raised today with merge expected by Wednesday.  \n- Meera is blocked on the Kafka consumer due to lack of access to the staging Kafka cluster; a ticket has been raised with DevOps.  \n- The dark‑mode feature is being postponed to the next sprint.  \n- The release candidate remains scheduled for Thursday, and the next sync is set for Friday at 11 am.  \n\n## Decisions\n- Dark mode will be moved to the next sprint.  \n\n## Action items\n- **Arjun** raise the PR for the login timeout fix (due: today).  \n- **Me** review Arjun’s PR as soon as it is up (due: no date).  \n- **Me** share the UAT build with Sanjay’s team (due: Wednesday).  \n- **Priya** escalate the Kafka‑cluster access ticket with DevOps (due: today).  \n- **DevOps team** grant Meera access to the staging Kafka cluster (due: no date).  \n- **Meera** work on the Kafka consumer once access is granted (estimated effort: two days, due: no date).  ",
+   "first_word_s": 1.4020337999681942,
+   "total_s": 2.15,
+   "prompt_tokens": 454,
+   "completion_tokens": 745,
+   "reasoning_tokens": 481,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.310556992,
+    "prompt_time": 0.021692793,
+    "completion_time": 1.552253278,
+    "total_time": 1.573946071
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "ticket PAY-412 kept",
+     true
+    ],
+    [
+     "dark mode moved to next sprint, under Decisions",
+     true
+    ],
+    [
+     "owners Arjun, Priya and Me in action items",
+     true
+    ],
+    [
+     "dates Wednesday, Thursday, Friday",
+     true
+    ],
+    [
+     "Kafka access blocker",
+     true
+    ]
+   ],
+   "passed": 6,
+   "of": 6,
+   "needed_cleanup": true
+  },
+  {
+   "task": "meeting_hinglish",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "## Summary\n- Discussed the staging deployment schedule and the payment gateway timeout issue.  \n- Reviewed the need for a database migration script review before deployment.  \n- Agreed on QA’s requirement for new test cases and postponed the logging library upgrade until after the demo.  \n- Set the client demo for Monday and planned the next sync meeting.\n\n## Decisions\n- Staging deployment will happen on Friday.  \n- Payment gateway retry‑logic fix will be completed by Thursday.  \n- Database migration script will be reviewed by tomorrow.  \n- New QA test cases will be sent by today evening.  \n- Logging library upgrade will be deferred until after the demo.  \n- Next sync meeting scheduled for Wednesday at 4 pm.\n\n## Action items\n- [Neha] Fix payment gateway retry logic (due: Thursday)  \n- [Me] Review database migration script (due: tomorrow)  \n- [Me] Perform staging deployment (due: Friday)  \n- [Neha] Send new QA test cases (due: today evening)  \n- [Rohit] Hold next sync meeting (due: Wednesday 4 pm)  ",
+   "first_word_s": 1.3454742000321858,
+   "total_s": 1.82,
+   "prompt_tokens": 411,
+   "completion_tokens": 585,
+   "reasoning_tokens": 346,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.391270923,
+    "prompt_time": 0.154774659,
+    "completion_time": 1.225297472,
+    "total_time": 1.380072131
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "written in English",
+     true
+    ],
+    [
+     "Neha owns the timeout fix by Thursday",
+     true
+    ],
+    [
+     "Me reviews the migration script",
+     true
+    ],
+    [
+     "Friday deployment and Monday demo",
+     true
+    ],
+    [
+     "test cases to QA",
+     true
+    ],
+    [
+     "logging upgrade postponed",
+     true
+    ]
+   ],
+   "passed": 7,
+   "of": 7,
+   "needed_cleanup": true
+  },
+  {
+   "task": "label_work",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "{\n  \"label\": \"work\",\n  \"confidence\": 0.99,\n  \"reasons\": [\n    \"Sprint planning meeting\",\n    \"Technical discussion of backlog and bugs\",\n    \"Multiple team members participating\"\n  ]\n}",
+   "first_word_s": 0.46010139997815713,
+   "total_s": 0.56,
+   "prompt_tokens": 268,
+   "completion_tokens": 135,
+   "reasoning_tokens": 78,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.212973369,
+    "prompt_time": 0.013278648,
+    "completion_time": 0.284838278,
+    "total_time": 0.298116926
+   },
+   "checks": [
+    [
+     "valid JSON, label work, confidence 0-1, 1-3 reasons",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1,
+   "needed_cleanup": false
+  },
+  {
+   "task": "label_timepass",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "{\n  \"label\": \"timepass\",\n  \"confidence\": 0.96,\n  \"reasons\": [\n    \"Conversation is casual personal talk about a match and weekend plans\",\n    \"No work-related topics mentioned\",\n    \"No calendar entry indicating a work meeting\"\n  ]\n}",
+   "first_word_s": 0.4409991999855265,
+   "total_s": 0.72,
+   "prompt_tokens": 252,
+   "completion_tokens": 140,
+   "reasoning_tokens": 72,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.212188799,
+    "prompt_time": 0.012426828,
+    "completion_time": 0.296783868,
+    "total_time": 0.309210696
+   },
+   "checks": [
+    [
+     "valid JSON, label timepass, confidence 0-1, 1-3 reasons",
+     true
+    ]
+   ],
+   "passed": 1,
+   "of": 1,
+   "needed_cleanup": false
+  },
+  {
+   "task": "email_explain",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "{\n  \"summary\": \"Vikram requests the API documentation and the latest load test report before the review on 2026-10-20. He also asks for clarification on whether the rate limit is per user or per tenant.\",\n  \"they_want\": [\n    \"API documentation\",\n    \"Latest load test report (draft is acceptable)\",\n    \"Confirmation of rate limit scope (per user or per tenant)\"\n  ],\n  \"deadlines\": [\n    {\n      \"what\": \"Provide the load test report (draft acceptable)\",\n      \"date\": \"2026-10-16\"\n    }\n  ],\n  \"people\": [\n    \"Vikram Rao\",\n    \"Me\",\n    \"Priya\"\n  ],\n  \"reply_options\": [\n    \"Send the API docs and draft load test report, and confirm the rate‑limit scope.\",\n    \"Ask Vikram if any additional details are needed for the docs or clarification on the rate‑limit definition before sending.\"\n  ]\n}",
+   "first_word_s": 1.358066399989184,
+   "total_s": 1.88,
+   "prompt_tokens": 299,
+   "completion_tokens": 541,
+   "reasoning_tokens": 330,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.213695635,
+    "prompt_time": 0.013590302,
+    "completion_time": 1.132682196,
+    "total_time": 1.146272498
+   },
+   "checks": [
+    [
+     "valid JSON with the five fields",
+     true
+    ],
+    [
+     "Friday is 2026-10-16",
+     true
+    ],
+    [
+     "asks: docs, load test report, rate limit",
+     true
+    ],
+    [
+     "Vikram among the people",
+     true
+    ]
+   ],
+   "passed": 4,
+   "of": 4,
+   "needed_cleanup": true
+  },
+  {
+   "task": "email_draft",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "Hi Sanjay,\n\nI’ll share the UAT build with you by Wednesday. I’m still waiting for Kafka access from DevOps; without that the integration remains blocked.\n\nThanks,",
+   "first_word_s": 0.6157633000402711,
+   "total_s": 0.69,
+   "prompt_tokens": 247,
+   "completion_tokens": 137,
+   "reasoning_tokens": 92,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.341360082,
+    "prompt_time": 0.011173893,
+    "completion_time": 0.290829932,
+    "total_time": 0.302003825
+   },
+   "checks": [
+    [
+     "greets Sanjay",
+     true
+    ],
+    [
+     "build by Wednesday",
+     true
+    ],
+    [
+     "Kafka access from DevOps, integration blocked",
+     true
+    ],
+    [
+     "signs off \"Thanks,\"",
+     true
+    ],
+    [
+     "under 120 words",
+     true
+    ],
+    [
+     "doesn't claim the integration is done",
+     true
+    ]
+   ],
+   "passed": 6,
+   "of": 6,
+   "needed_cleanup": false
+  },
+  {
+   "task": "code_explain",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "## What it does  \nThe script defines two utility functions: `add_tag` appends a given tag to a list and returns the list, while `average` attempts to compute the arithmetic mean of a list of numbers. Both functions are intended to be reusable helpers for simple list operations.\n\n## Problems  \n- `add_tag` uses a mutable default argument (`tags=[]`), causing the same list to be shared across calls.  \n- `average` starts the loop at index 1, so the first element of `nums` is never included in the sum.  \n- `average` divides by `len(nums)` even when the list might be empty, which would raise a `ZeroDivisionError`.  \n\n## Better version  \n```python\ndef add_tag(tag, tags=None):\n    \"\"\"Append a tag to a list without sharing mutable defaults.\"\"\"\n    if tags is None:\n        tags = []\n    tags.append(tag)\n    return tags\n\n\ndef average(nums):\n    \"\"\"Return the arithmetic mean of a non‑empty sequence of numbers.\"\"\"\n    if not nums:\n        raise ValueError(\"Cannot compute average of an empty list\")\n    total = sum(nums)          # includes all elements\n    return total / len(nums)\n```",
+   "first_word_s": 1.3316259999992326,
+   "total_s": 2.99,
+   "prompt_tokens": 214,
+   "completion_tokens": 352,
+   "reasoning_tokens": 96,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.342970362,
+    "prompt_time": 0.012193614,
+    "completion_time": 0.740287703,
+    "total_time": 0.752481317
+   },
+   "checks": [
+    [
+     "three headings",
+     true
+    ],
+    [
+     "finds the shared mutable default",
+     true
+    ],
+    [
+     "finds that the first number is skipped",
+     true
+    ],
+    [
+     "finds the empty-list division",
+     true
+    ],
+    [
+     "its better version passes tests",
+     true
+    ]
+   ],
+   "passed": 5,
+   "of": 5,
+   "needed_cleanup": true
+  },
+  {
+   "task": "dictation_cleanup",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "I wanted to tell you that the deployment is moved to Friday because the QA team found two issues in the payment flow, and we need to fix them first. Please don't share the build with the client before that.",
+   "first_word_s": 0.8615914999973029,
+   "total_s": 0.95,
+   "prompt_tokens": 217,
+   "completion_tokens": 263,
+   "reasoning_tokens": 211,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.34323895,
+    "prompt_time": 0.009807666,
+    "completion_time": 0.550537936,
+    "total_time": 0.560345602
+   },
+   "checks": [
+    [
+     "fillers and repeats gone",
+     true
+    ],
+    [
+     "facts kept",
+     true
+    ],
+    [
+     "no preamble",
+     true
+    ],
+    [
+     "25 to 50 words",
+     true
+    ]
+   ],
+   "passed": 4,
+   "of": 4,
+   "needed_cleanup": false
+  },
+  {
+   "task": "journal",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "I had a work call where we decided to move dark mode to the next sprint [E3]. I also made two commits in AI‑Bot, adding an API key window with Credential Manager storage (3f9c2a1) and implementing a two‑lane capture check (b7d41e0) while dictating six snippets totaling 412 words [E1, E2, E6]. I sent an email to Vikram Rao with the API docs and load test report [E4]. Additionally, I took one timepass call during the day [E5].",
+   "first_word_s": 1.7633431000285782,
+   "total_s": 2.01,
+   "prompt_tokens": 382,
+   "completion_tokens": 765,
+   "reasoning_tokens": 638,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.335112115,
+    "prompt_time": 0.020842501,
+    "completion_time": 1.605293531,
+    "total_time": 1.626136032
+   },
+   "checks": [
+    [
+     "every sentence cites events",
+     true
+    ],
+    [
+     "3 to 6 sentences",
+     true
+    ],
+    [
+     "both commit IDs exact",
+     true
+    ],
+    [
+     "no invented commit IDs",
+     true
+    ],
+    [
+     "no timepass details",
+     true
+    ]
+   ],
+   "passed": 5,
+   "of": 5,
+   "needed_cleanup": true
+  },
+  {
+   "task": "answer",
+   "route": "groq-120b-medium",
+   "ok": true,
+   "error": "",
+   "text": "A process is an independent execution unit with its own memory space, while a thread is a smaller execution unit that runs inside a process and shares that process’s memory and resources. Threads enable concurrent operations within the same process, whereas processes are isolated from one another.",
+   "first_word_s": 1.0446901000104845,
+   "total_s": 1.16,
+   "prompt_tokens": 141,
+   "completion_tokens": 325,
+   "reasoning_tokens": 264,
+   "finish": "stop",
+   "server": {
+    "queue_time": 0.386494245,
+    "prompt_time": 0.040481369,
+    "completion_time": 0.679759401,
+    "total_time": 0.72024077
+   },
+   "checks": [
+    [
+     "at most 3 sentences",
+     true
+    ],
+    [
+     "mentions memory",
+     true
+    ],
+    [
+     "under 80 words",
+     true
+    ]
+   ],
+   "passed": 3,
+   "of": 3,
+   "needed_cleanup": false
+  }
+ ],
+ "review_letters": {
+  "meeting_en:A": "groq-20b",
+  "meeting_en:B": "groq-120b",
+  "meeting_hinglish:A": "groq-20b",
+  "meeting_hinglish:B": "groq-120b",
+  "label_work:A": "groq-20b",
+  "label_work:B": "groq-120b",
+  "label_timepass:A": "groq-120b",
+  "label_timepass:B": "groq-20b",
+  "email_explain:A": "groq-20b",
+  "email_explain:B": "groq-120b",
+  "email_draft:A": "groq-120b",
+  "email_draft:B": "groq-20b",
+  "code_explain:A": "groq-120b",
+  "code_explain:B": "groq-20b",
+  "dictation_cleanup:A": "groq-20b",
+  "dictation_cleanup:B": "groq-120b",
+  "journal:A": "groq-20b",
+  "journal:B": "groq-120b",
+  "answer:A": "groq-120b",
+  "answer:B": "groq-20b"
+ }
+}
